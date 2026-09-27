@@ -4,6 +4,11 @@
 
 When the user says **"vibe check"**, **"pre-launch check"** or asks if the project is ready to ship, run this audit.
 
+If the user says **"quick vibe check"**, run the same steps in **Quick mode**:
+- Only P0 checks: the P0 list in Step 2, plus the P0 items of the stack and release files from Step 3. Skip P1 and P2.
+- One targeted search per check (use its "How to test"). If a check needs deeper tracing, mark it `NEEDS REVIEW` instead of investigating.
+- In the report, list only `FAIL` and `NEEDS REVIEW` rows, add `Mode: quick (P0 only)` under `Source`, give the number of passed checks in one line, and end with: `Run "vibe check" for the full audit.`
+
 ## Step 1 — Detect the stack
 Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyproject.toml, app.json / app.config.*, pubspec.yaml, AndroidManifest.xml, Info.plist, supabase/config.toml, firebase.json. List the stacks you found.
 
