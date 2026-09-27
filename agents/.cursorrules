@@ -35,6 +35,8 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 - [ ] `OPS-001` Migrations are reviewed as SQL before deploy and don't break the running version
 - [ ] `PAY-001` `PAY-002` `PAY-003` Price, access and premium status are decided on the server, never by the client or the success page (if the app takes payments)
 - [ ] `PAY-007` Test and live payment keys are separate per environment (if the app takes payments)
+- [ ] `LLM-001` `LLM-004` AI endpoints have spending limits, and the model never decides permissions (if the app calls an LLM)
+- [ ] `LLM-005` Model output is never rendered as raw HTML (if the app calls an LLM)
 
 ### P1
 - [ ] `UNI-010` List endpoints are paginated
@@ -44,7 +46,7 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 ## Step 3 — Stack-specific checks
 Fetch files from `https://raw.githubusercontent.com/yldray/vibe-check/main/<path>`. Use `curl -fsSL <url>` or another tool that returns the file byte for byte. A fetch tool that summarizes pages can drop or reword checks; use it only when you have no shell.
 
-Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`. If the app takes payments, also read `payments.md`.
+Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`. If the app takes payments, also read `payments.md`. If it calls a language model (packages like `openai`, `@anthropic-ai/sdk`, `anthropic`, `google-genai`, `ai`, `langchain`), also read `llm-features.md`.
 
 For each detected stack, read `_common/checklist.md` of its group plus `chronic-issues.md` and `test-cases.md` in its folder:
 
