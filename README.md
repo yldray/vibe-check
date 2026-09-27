@@ -26,6 +26,23 @@ React · Angular · Vue · .NET · Java · Node · Python · Android · iOS · E
 
 No install. No config. Your AI audits the code it wrote.
 
+## 🧭 How it works
+
+<img src="assets/how-it-works.png" alt="Three steps: drop in one file and say Run vibe check; the agent detects your stack, fetches the matching checks and reads your code; you get a report with ID, status and file:line, and nothing changes until you approve" width="100%">
+
+1. **Drop in one file.** It tells your agent what "vibe check" means. Nothing else is added to your project.
+2. **The agent audits.** It detects your stacks from files like `package.json`, `*.csproj` or `app.json`, fetches the matching checks from this repo, and reads your code without changing it.
+3. **You get a report.** Every check gets an ID, a status, the file:line and a fix:
+
+| Status | Meaning |
+|---|---|
+| `FAIL` | Broken. The report shows where and how to fix it. |
+| `PASS` | Verified in your code. |
+| `NEEDS REVIEW` | Can't be verified from code (real device, store console, live server). You confirm it. |
+| `N/A` | Doesn't apply to your project. |
+
+Any P0 that is `FAIL` or `NEEDS REVIEW` makes the verdict 🔴 **NOT READY**. Say which fixes you want and the agent applies them. Until you approve, nothing in your code changes.
+
 ## 🔒 Is it safe?
 
 Everything here is plain Markdown you can read. The whole agent behavior is one file, [`agents/CLAUDE.md`](agents/CLAUDE.md), and it takes about 2 minutes to read.
@@ -74,7 +91,36 @@ Every stack folder has the same 4 files:
 
 ## 🤝 Contributing
 
-Seen an AI break the same thing twice? That's a test case. Read [CONTRIBUTING.md](CONTRIBUTING.md) and open a PR.
+Seen an AI break the same thing twice? That's a test case. 8 of the 12 stacks are only seeded, so every real bug helps.
+
+**No time for a PR?** [Open an issue](https://github.com/yldray/vibe-check/issues/new?template=new-test-case.md) with the "New test case" template. Someone will turn it into a check.
+
+**Adding a check yourself:**
+
+1. **Search first.** Make sure the bug isn't already covered (search the stack folder for a keyword).
+2. **Pick the file.**
+   - A bug AI keeps writing → the stack's `chronic-issues.md`
+   - Something to test before launch → the stack's `test-cases.md`
+   - Applies to every stack → `00-universal/`
+   - A store or hosting rule → `04-release/` (link the official source)
+3. **Take the next free ID.** Chronic issues and test cases of a stack share one sequence:
+   ```bash
+   grep -rhoE 'NODE-[0-9]{3}' 02-backend/node | sort | tail -1
+   ```
+   If that prints `NODE-018`, yours is `NODE-019`.
+4. **Write it with the [template](templates/test-case-template.md).** It must be testable: say how to test it and what "pass" looks like.
+   ```markdown
+   ### NODE-019 · Short title
+   **Severity:** P1
+   **Why it breaks:** What the AI typically writes and why it fails.
+   **How to test:** A concrete step or command.
+   **Pass:** What good looks like.
+   **Fix:** The shortest correct fix.
+   ```
+5. **Describe the pattern, not the project.** This repo is public: no names, paths or report excerpts from private or client projects.
+6. **Open a PR** and tick the checklist. If you changed `agents/CLAUDE.md`, run `sh scripts/sync-agents.sh` first; CI checks it.
+
+Full rules, including how to add a new stack: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📄 License
 

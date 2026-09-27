@@ -20,4 +20,6 @@ Thanks for helping vibe coders ship safer code.
 
 ## Adding a new stack
 
-Copy any existing stack folder and keep the same 4 files.
+1. Copy any existing stack folder and keep the same 4 files. Pick a new prefix (e.g. `GO-`) and start at `001`.
+2. In `agents/CLAUDE.md`, add a row to the stack table in Step 3 (and the file that reveals the stack to Step 1 if it's new). Then run `sh scripts/sync-agents.sh`.
+3. Add the stack to the Coverage table in `README.md` as 🌱 Seeded.
