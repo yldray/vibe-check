@@ -17,7 +17,7 @@ B="(^|[;[:space:]])(password|pwd)=[^;\"'<>\${}[:space:]]{6,}|^[a-z0-9_]*(key|sec
 git grep -ciE -e "$A" -e "$B"
 git log --all -p --format='commit %h' -i -G"$A|$B" | grep -E '^(commit |\+\+\+ b/)'
 ```
-6. Report: `FAIL` rows first, then `NEEDS REVIEW`, then one row with the manual IDs in the ID column, `Confirm by hand` as the check and `NEEDS REVIEW` as the status. Keep every cell to one short sentence. Leave out N/A checks. Add `Mode: quick (P0 only)` under `Source`, one line `Passed: <n> · N/A: <n>`, and end with `Run "vibe check" for the full audit.`
+6. Report: `FAIL` rows first, then `NEEDS REVIEW`, then one row with the manual IDs in the ID column, `Confirm by hand` as the check and `NEEDS REVIEW` as the status. Keep every cell to one short sentence. Leave out N/A checks. Counts in the FAIL and NEEDS REVIEW lines are rows. Add `Mode: quick (P0 only)` under `Source`, put `Passed: <n> · N/A: <n>` just before `VERDICT`, and end with `Run "vibe check" for the full audit.`
 
 ## Step 1 — Detect the stack
 Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyproject.toml, app.json / app.config.*, pubspec.yaml, AndroidManifest.xml, Info.plist, supabase/config.toml, firebase.json. List the stacks you found.
@@ -87,7 +87,7 @@ Release targets: also read the matching `04-release/` file.
 - `app-store.md`: an `ios/` folder, an `.xcodeproj`, or Expo config with `ios.bundleIdentifier`
 - `web-deploy.md`: a web frontend or a deploy config (`vercel.json`, `netlify.toml`, `Dockerfile`, IIS `web.config`, a CI deploy workflow)
 
-If a platform is configured but you cannot tell whether it ships, ask the user once before the report. If you can't ask (running unattended), assume it ships and say so. Mark the checks of a platform that does not ship `N/A`.
+An Expo or React Native app's generated `android/` and `ios/` folders don't make it a native Android or iOS project; use the React Native / Expo section. If a platform is configured but you cannot tell whether it ships, ask the user once before the report. If you can't ask (running unattended), assume it ships and say so. Mark the checks of a platform that does not ship `N/A`.
 
 If the same check has different severities, use the stricter one.
 

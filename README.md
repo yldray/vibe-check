@@ -21,7 +21,7 @@ React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebas
    - Claude Code → `CLAUDE.md`
    - Cursor → `.cursorrules`
    - Codex / others → `AGENTS.md`
-2. Tell your agent: **"Run vibe check"**, or **"quick vibe check"** for P0s only, with a shorter report
+2. Tell your agent: **"Run vibe check"**, or **"quick vibe check"** for P0s only (in our test on a real project: ~8 min instead of ~17 for the full audit)
 3. Fix every **P0** before you ship. A P0 marked `NEEDS REVIEW` counts too: confirm it yourself.
 
 No install. No config. Your AI audits the code it wrote.
