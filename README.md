@@ -67,7 +67,7 @@ Everything here is plain Markdown you can read. The whole agent behavior is one 
 
 | Folder | What you get |
 |---|---|
-| [`00-universal`](00-universal/) | Checks for every project: security, env, performance, a11y, privacy, AI pitfalls |
+| [`00-universal`](00-universal/) | Checks for every project: security, env, performance, a11y, privacy, QA / UX, AI pitfalls |
 | [`01-frontend`](01-frontend/) | React, Angular, Vue, vanilla JS |
 | [`02-backend`](02-backend/) | .NET, Java Spring, Node, Python |
 | [`03-mobile`](03-mobile/) | Android, iOS, React Native / Expo, Flutter |
