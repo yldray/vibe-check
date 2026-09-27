@@ -9,3 +9,7 @@ Same content, different file names per tool:
 | Codex / others | `AGENTS.md` | project root |
 
 Then say: **"Run vibe check"**
+
+## Maintainers
+
+Edit only `CLAUDE.md`, then run `sh scripts/sync-agents.sh` to update the other two. CI fails if they drift.

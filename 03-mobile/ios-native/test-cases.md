@@ -2,5 +2,5 @@
 
 > 🌱 Seeded list. Contributions welcome.
 
-- [ ] **P0** TestFlight build tested on real device
-- [ ] **P1** Dynamic Type and dark mode
+- [ ] `IOS-004` **P0** TestFlight build tested on real device
+- [ ] `IOS-005` **P1** Dynamic Type and dark mode

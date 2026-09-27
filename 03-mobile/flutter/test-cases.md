@@ -2,5 +2,5 @@
 
 > 🌱 Seeded list. Contributions welcome.
 
-- [ ] **P0** Release builds tested on both platforms
-- [ ] **P1** Text scaling and small screens
+- [ ] `FLT-004` **P0** Release builds tested on both platforms
+- [ ] `FLT-005` **P1** Text scaling and small screens

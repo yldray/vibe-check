@@ -3,19 +3,19 @@
 > Always verify against the [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/).
 
 ## P0
-- [ ] Tested on real devices via TestFlight
-- [ ] Demo account + notes provided in App Review information (if login is required)
-- [ ] Account deletion inside the app (if the app has accounts)
-- [ ] Privacy nutrition labels match real data collection (including SDKs)
-- [ ] Privacy manifest (PrivacyInfo.xcprivacy) included where required
-- [ ] Every permission has a clear usage description
-- [ ] No placeholder content, broken links, "beta" or "test" wording
-- [ ] Third-party social login offered → an equivalent privacy-focused login option is also offered (check guideline 4.8)
-- [ ] Digital goods and subscriptions follow in-app purchase rules for your regions
-- [ ] Privacy policy URL in App Store Connect and inside the app
+- [ ] `APPSTORE-001` Tested on real devices via TestFlight
+- [ ] `APPSTORE-002` Demo account + notes provided in App Review information (if login is required)
+- [ ] `APPSTORE-003` Account deletion inside the app (if the app has accounts)
+- [ ] `APPSTORE-004` Privacy nutrition labels match real data collection (including SDKs)
+- [ ] `APPSTORE-005` Privacy manifest (PrivacyInfo.xcprivacy) included where required
+- [ ] `APPSTORE-006` Every permission has a clear usage description
+- [ ] `APPSTORE-007` No placeholder content, broken links, "beta" or "test" wording
+- [ ] `APPSTORE-008` Third-party social login offered → an equivalent privacy-focused login option is also offered (check guideline 4.8)
+- [ ] `APPSTORE-009` Digital goods and subscriptions follow in-app purchase rules for your regions
+- [ ] `APPSTORE-010` Privacy policy URL in App Store Connect and inside the app
 
 ## P1
-- [ ] Screenshots for required device sizes
-- [ ] Restore purchases button (if IAP)
-- [ ] Works on the oldest iOS version you support
-- [ ] Phased release enabled
+- [ ] `APPSTORE-011` Screenshots for required device sizes
+- [ ] `APPSTORE-012` Restore purchases button (if IAP)
+- [ ] `APPSTORE-013` Works on the oldest iOS version you support
+- [ ] `APPSTORE-014` Phased release enabled

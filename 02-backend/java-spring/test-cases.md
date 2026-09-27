@@ -2,5 +2,5 @@
 
 > 🌱 Seeded list. Contributions welcome.
 
-- [ ] **P0** Spring Security config reviewed for permitAll leftovers
-- [ ] **P1** Flyway/Liquibase migrations tested
+- [ ] `JAVA-004` **P0** Spring Security config reviewed for permitAll leftovers
+- [ ] `JAVA-005` **P1** Flyway/Liquibase migrations tested

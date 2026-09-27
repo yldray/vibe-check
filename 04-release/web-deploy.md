@@ -1,20 +1,20 @@
 # Web deploy checklist
 
 ## P0
-- [ ] HTTPS with auto-renewing certificate; HTTP redirects to HTTPS
-- [ ] Production env vars set; debug off
-- [ ] DB backups scheduled and a restore tested
-- [ ] Error tracking connected
-- [ ] Privacy policy + terms live
+- [ ] `WEB-001` HTTPS with auto-renewing certificate; HTTP redirects to HTTPS
+- [ ] `WEB-002` Production env vars set; debug off
+- [ ] `WEB-003` DB backups scheduled and a restore tested
+- [ ] `WEB-004` Error tracking connected
+- [ ] `WEB-005` Privacy policy + terms live
 
 ## P1
-- [ ] Uptime monitoring and alerts
-- [ ] Security headers verified (securityheaders.com)
-- [ ] CDN / caching for static assets
-- [ ] SPA fallback / redirects configured
-- [ ] Rollback plan tested once
-- [ ] Custom 404 / 500 pages
+- [ ] `WEB-006` Uptime monitoring and alerts
+- [ ] `WEB-007` Security headers verified (securityheaders.com)
+- [ ] `WEB-008` CDN / caching for static assets
+- [ ] `WEB-009` SPA fallback / redirects configured
+- [ ] `WEB-010` Rollback plan tested once
+- [ ] `WEB-011` Custom 404 / 500 pages
 
 ## P2
-- [ ] Sitemap, robots.txt, OG images
-- [ ] Analytics on the main funnel
+- [ ] `WEB-012` Sitemap, robots.txt, OG images
+- [ ] `WEB-013` Analytics on the main funnel

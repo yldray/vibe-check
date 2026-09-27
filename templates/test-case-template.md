@@ -4,3 +4,7 @@
 **How to test:** Concrete steps or a command.
 **Pass:** What "good" looks like.
 **Fix:** The shortest correct fix.
+
+Checklist line (in `test-cases.md`, `checklist.md` and release files):
+
+- [ ] `STACK-000` **P0 | P1 | P2** One short, testable check

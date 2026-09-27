@@ -2,5 +2,5 @@
 
 > 🌱 Seeded list. Contributions welcome.
 
-- [ ] **P0** No secrets in scripts
-- [ ] **P1** Works in Safari
+- [ ] `JS-004` **P0** No secrets in scripts
+- [ ] `JS-005` **P1** Works in Safari

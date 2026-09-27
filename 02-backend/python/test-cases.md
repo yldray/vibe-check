@@ -2,5 +2,5 @@
 
 > 🌱 Seeded list. Contributions welcome.
 
-- [ ] **P0** Secrets not in settings.py
-- [ ] **P1** Migrations tested on empty DB
+- [ ] `PY-004` **P0** Secrets not in settings.py
+- [ ] `PY-005` **P1** Migrations tested on empty DB
