@@ -5,7 +5,7 @@
 When the user says **"vibe check"**, **"pre-launch check"** or asks if the project is ready to ship, run this audit.
 
 ## Step 1 — Detect the stack
-Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyproject.toml, app.json / app.config.*, pubspec.yaml, AndroidManifest.xml, Info.plist. List the stacks you found.
+Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyproject.toml, app.json / app.config.*, pubspec.yaml, AndroidManifest.xml, Info.plist, supabase/config.toml, firebase.json. List the stacks you found.
 
 ## Step 2 — Universal checks (always run)
 
@@ -30,6 +30,11 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 - [ ] `LEGAL-002` Users can delete their account and data (if the app has accounts)
 - [ ] `QA-008` Main flow works end to end on production with a fresh account (sign up, verify, main action, payment)
 - [ ] `QA-009` Transactional e-mails arrive and their links point to production, not localhost (if the app sends e-mail)
+- [ ] `AUTH-001` Tokens are verified (signature, algorithm, expiry), not just decoded
+- [ ] `AUTH-002` Reset links and one-time codes expire, work once and are stored hashed
+- [ ] `OPS-001` Migrations are reviewed as SQL before deploy and don't break the running version
+- [ ] `PAY-001` `PAY-002` `PAY-003` Price, access and premium status are decided on the server, never by the client or the success page (if the app takes payments)
+- [ ] `PAY-007` Test and live payment keys are separate per environment (if the app takes payments)
 
 ### P1
 - [ ] `UNI-010` List endpoints are paginated
@@ -39,7 +44,7 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 ## Step 3 — Stack-specific checks
 Fetch files from `https://raw.githubusercontent.com/yldray/vibe-check/main/<path>`. Use `curl -fsSL <url>` or another tool that returns the file byte for byte. A fetch tool that summarizes pages can drop or reword checks; use it only when you have no shell.
 
-Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`.
+Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`. If the app takes payments, also read `payments.md`.
 
 For each detected stack, read `_common/checklist.md` of its group plus `chronic-issues.md` and `test-cases.md` in its folder:
 
@@ -53,6 +58,8 @@ For each detected stack, read `_common/checklist.md` of its group plus `chronic-
 | Java Spring | `02-backend/java-spring/` |
 | Node.js | `02-backend/node/` |
 | Python | `02-backend/python/` |
+| Supabase | `02-backend/supabase/` |
+| Firebase | `02-backend/firebase/` |
 | Android (Kotlin) | `03-mobile/android-native/` |
 | iOS (Swift) | `03-mobile/ios-native/` |
 | React Native / Expo | `03-mobile/react-native-expo/` |

@@ -5,7 +5,7 @@
 **Ship AI-written code without shipping AI-written bugs.**
 
 Pre-launch test cases, chronic bugs and store-release rules for vibe coders.
-React · Angular · Vue · .NET · Java · Node · Python · Android · iOS · Expo · Flutter
+React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebase · Android · iOS · Expo · Flutter
 
 ![License](https://img.shields.io/badge/license-MIT-green) ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen) ![Made for](https://img.shields.io/badge/made%20for-Claude%20Code%20%7C%20Cursor%20%7C%20Copilot-purple) [![VirusTotal](https://img.shields.io/badge/VirusTotal-scanned%20every%20release-394EFF)](https://github.com/yldray/vibe-check/releases/latest)
 
@@ -67,9 +67,9 @@ Everything here is plain Markdown you can read. The whole agent behavior is one 
 
 | Folder | What you get |
 |---|---|
-| [`00-universal`](00-universal/) | Checks for every project: security, env, performance, a11y, privacy, QA / UX, AI pitfalls |
+| [`00-universal`](00-universal/) | Checks for every project: security, auth flows, payments, jobs & deploys, env, performance, a11y, privacy, QA / UX, AI pitfalls |
 | [`01-frontend`](01-frontend/) | React, Angular, Vue, vanilla JS |
-| [`02-backend`](02-backend/) | .NET, Java Spring, Node, Python |
+| [`02-backend`](02-backend/) | .NET, Java Spring, Node, Python, Supabase, Firebase |
 | [`03-mobile`](03-mobile/) | Android, iOS, React Native / Expo, Flutter |
 | [`04-release`](04-release/) | Google Play, App Store and web deploy rules |
 | [`agents`](agents/) | Drop-in files for AI coding agents |
@@ -88,11 +88,11 @@ Every stack folder has the same 4 files:
 |---|---|
 | Universal · Release | ✅ Complete |
 | React · Node · Expo | ✅ Complete |
-| Angular · Vue · .NET · Java · Python · Android · iOS · Flutter | 🌱 Seeded, needs contributors |
+| Angular · Vue · .NET · Java · Python · Supabase · Firebase · Android · iOS · Flutter | 🌱 Seeded, needs contributors |
 
 ## 🤝 Contributing
 
-Seen an AI break the same thing twice? That's a test case. 8 of the 12 stacks are only seeded, so every real bug helps.
+Seen an AI break the same thing twice? That's a test case. 10 of the 14 stacks are only seeded, so every real bug helps.
 
 **No time for a PR?** [Open an issue](https://github.com/yldray/vibe-check/issues/new?template=new-test-case.md) with the "New test case" template. Someone will turn it into a check.
 
