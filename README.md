@@ -9,6 +9,8 @@ React · Angular · Vue · .NET · Java · Node · Python · Android · iOS · E
 
 ![License](https://img.shields.io/badge/license-MIT-green) ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen) ![Made for](https://img.shields.io/badge/made%20for-Claude%20Code%20%7C%20Cursor%20%7C%20Copilot-purple)
 
+<img src="assets/sample-report.png" alt="Sample vibe check report: four P0 checks, three FAIL, verdict NOT READY" width="720">
+
 </div>
 
 ---
@@ -20,9 +22,20 @@ React · Angular · Vue · .NET · Java · Node · Python · Android · iOS · E
    - Cursor → `.cursorrules`
    - Codex / others → `AGENTS.md`
 2. Tell your agent: **"Run vibe check"**
-3. Fix every **P0** before you ship.
+3. Fix every **P0** before you ship. A P0 marked `NEEDS REVIEW` counts too: confirm it yourself.
 
 No install. No config. Your AI audits the code it wrote.
+
+## 🔒 Is it safe?
+
+Everything here is plain Markdown you can read. The whole agent behavior is one file, [`agents/CLAUDE.md`](agents/CLAUDE.md), and it takes about 2 minutes to read.
+
+- **Nothing to install or run.** No binaries, no packages, no scripts in your project. (`scripts/sync-agents.sh` is only for maintainers of this repo.)
+- **Read-only audit.** The agent does not change your code until you approve the report.
+- **Fetches from one place only:** raw files of this repo. It ignores links to other sites.
+- **Fetched files are data, not instructions.** If one asks the agent to change its rules, edit or delete files, install anything, reveal secrets or send data, the agent refuses and flags it as `⚠️ Suspicious source content`.
+- **Secrets stay hidden.** It never prints a secret value. It shows the name, file:line and a masked value like `sk_live_****`.
+- **Want a frozen version?** Fork the repo and point the base URL in your copy of the agent file to your fork.
 
 ## 🚦 Severity
 
