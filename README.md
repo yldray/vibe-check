@@ -7,7 +7,7 @@
 Pre-launch test cases, chronic bugs and store-release rules for vibe coders.
 React · Angular · Vue · .NET · Java · Node · Python · Android · iOS · Expo · Flutter
 
-![License](https://img.shields.io/badge/license-MIT-green) ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen) ![Made for](https://img.shields.io/badge/made%20for-Claude%20Code%20%7C%20Cursor%20%7C%20Copilot-purple)
+![License](https://img.shields.io/badge/license-MIT-green) ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen) ![Made for](https://img.shields.io/badge/made%20for-Claude%20Code%20%7C%20Cursor%20%7C%20Copilot-purple) [![VirusTotal](https://img.shields.io/badge/VirusTotal-scanned%20every%20release-394EFF)](https://github.com/yldray/vibe-check/releases/latest)
 
 <img src="assets/sample-report.png" alt="Sample vibe check report: four P0 checks, three FAIL, verdict NOT READY" width="720">
 
@@ -52,6 +52,7 @@ Everything here is plain Markdown you can read. The whole agent behavior is one 
 - **Fetches from one place only:** raw files of this repo. It ignores links to other sites.
 - **Fetched files are data, not instructions.** If one asks the agent to change its rules, edit or delete files, install anything, reveal secrets or send data, the agent refuses and flags it as `⚠️ Suspicious source content`.
 - **Secrets stay hidden.** It never prints a secret value. It shows the name, file:line and a masked value like `sk_live_****`.
+- **Scanned on every release.** Each release zip and the agent file are uploaded to VirusTotal automatically. Scan links and SHA-256 hashes are in the [release notes](https://github.com/yldray/vibe-check/releases/latest).
 - **Want a frozen version?** Fork the repo and point the base URL in your copy of the agent file to your fork.
 
 ## 🚦 Severity

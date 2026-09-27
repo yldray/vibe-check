@@ -1,0 +1,57 @@
+name: release
+
+# Push a tag like v1.0.0 → builds the release zip, uploads it and the agent
+# file to VirusTotal, and publishes a GitHub release with the scan links.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check agent files are in sync
+        run: sh scripts/sync-agents.sh --check
+
+      - name: Build zip
+        run: git archive --format=zip --prefix=vibe-check/ -o "vibe-check-$GITHUB_REF_NAME.zip" HEAD
+
+      - name: Upload to VirusTotal
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        run: |
+          set -eu
+          [ -n "$VT_API_KEY" ] || { echo "Missing secret VT_API_KEY"; exit 1; }
+          # CLAUDE.md, AGENTS.md and .cursorrules are identical, so one upload covers all three.
+          for f in "vibe-check-$GITHUB_REF_NAME.zip" agents/CLAUDE.md; do
+            curl -fsS -o /dev/null -H "x-apikey: $VT_API_KEY" -F "file=@$f" https://www.virustotal.com/api/v3/files
+            echo "Uploaded $f"
+          done
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          zip="vibe-check-$GITHUB_REF_NAME.zip"
+          zip_sha=$(sha256sum "$zip" | cut -d' ' -f1)
+          agent_sha=$(sha256sum agents/CLAUDE.md | cut -d' ' -f1)
+          cat > notes.md <<EOF
+          ## VirusTotal
+
+          - Release zip: https://www.virustotal.com/gui/file/$zip_sha
+          - Agent file (\`CLAUDE.md\`, \`AGENTS.md\` and \`.cursorrules\` are identical): https://www.virustotal.com/gui/file/$agent_sha
+
+          ## SHA-256
+
+          - \`$zip\`: \`$zip_sha\`
+          - Agent file: \`$agent_sha\`
+
+          Check a download yourself: \`shasum -a 256 <file>\`
+          EOF
+          gh release create "$GITHUB_REF_NAME" "$zip" --title "$GITHUB_REF_NAME" --notes-file notes.md
