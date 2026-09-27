@@ -17,6 +17,7 @@ SECTIONS = [
     ("00-universal", "Every project"),
     ("00-universal/payments.md", "If the app takes payments"),
     ("00-universal/llm-features.md", "If the app calls a language model"),
+    ("00-universal/cloud-infra.md", "If the repo has cloud or deploy config"),
     ("01-frontend/_common", "Frontend (any)"),
     ("01-frontend/react", "React / Next.js"),
     ("01-frontend/angular", "Angular"),
