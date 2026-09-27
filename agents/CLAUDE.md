@@ -9,7 +9,7 @@ If the user says **"quick vibe check"**, run **Quick mode** instead of Steps 2�
 2. Fetch one file: `quick/p0.md` (same base URL as Step 3). It lists every P0 check. Use only the sections that match the project.
 3. Checks marked `manual` need a device, a store console, production or a running build. Don't search for them; list their IDs in one row.
 4. Every other check gets one targeted search (`git grep`, a config file read), and related checks share one search (e.g. one `git grep` for all auth checks). Unsure after that → `NEEDS REVIEW`, don't dig deeper. Aim for about 30 commands in total.
-5. Secrets: `gitleaks detect --redact` if installed. Otherwise run the commands below once. They find literal values assigned to secret-like names (and known key formats) in the files and in git history, and print only file names, counts and commits, never values. Don't open the matches; sort the files instead:
+5. Secrets: `gitleaks detect --redact` if installed. Otherwise run the commands below once. They find literal values assigned to secret-like names (and known key formats) in the files and in git history, and print only file names, counts and commits, never values. They skip the vibe-check agent files, which contain these patterns. Don't open the matches; sort the files instead:
    - settings code and config files (`config.py`, `settings.py`, `config.js`, `appsettings*.json`, `application.*`, `.env`), scripts, migrations and docs → one `FAIL` row per file, also when the match is only in history
    - tests, examples (`*.example`, `*.example.*`, `.env.example`) and data files → one `NEEDS REVIEW` row
    - other source files (often key names, not secrets) → one `NEEDS REVIEW` row
@@ -19,9 +19,9 @@ A="[a-z0-9_]*(key|secret|token|passw(or)?d|pwd|salt)[a-z0-9_]*[\"']?[[:space:]]*
 B="(^|[;[:space:]])(password|pwd)=[^;\"'<>\${}[:space:]]{6,}|^[a-z0-9_]*(key|secret|token|password)[a-z0-9_]*=[^[:space:]\$<{]{8,}"
 C="(sk_live_|sk_test_|sk-proj-|sk-ant-|sb_secret_|AIza[0-9A-Za-z_-]{20}|AKIA[0-9A-Z]{16}|ghp_[0-9A-Za-z]{20}|xox[bp]-|-----BEGIN [A-Z ]*PRIVATE KEY)"
 D="(^|[.[:space:]])[a-z0-9_.-]*(password|passwd|pwd|secret|token|api[_-]?key|private[_-]?key)[a-z0-9_]*[[:space:]]*[:=][[:space:]]*[^\"'[:space:]\$<{%#][^[:space:]]{7,}[[:space:]]*$"
-git grep -ciE -e "$A" -e "$B" -e "$C"
+git grep -ciE -e "$A" -e "$B" -e "$C" -- . ':(exclude)CLAUDE.md' ':(exclude)AGENTS.md' ':(exclude).cursorrules'
 git grep -ciE -e "$D" -- '*.properties' '*.yml' '*.yaml' '*.ini' '*.toml' '*.conf' '*.cfg' '*.env' '.env*'
-git log --all -p --format='commit %h' -i -G"$A|$B|$C" | command grep -E '^(commit |\+\+\+ b/|--- a/)' | command grep -v '/dev/null'
+git log --all -p --format='commit %h' -i -G"$A|$B|$C" -- . ':(exclude)CLAUDE.md' ':(exclude)AGENTS.md' ':(exclude).cursorrules' | command grep -E '^(commit |\+\+\+ b/|--- a/)' | command grep -v '/dev/null'
 git log --all -p --format='commit %h' -i -G"$D" -- '*.properties' '*.yml' '*.yaml' '*.ini' '*.toml' '*.conf' '*.cfg' '*.env' '.env*' | command grep -E '^(commit |\+\+\+ b/|--- a/)' | command grep -v '/dev/null'
 ```
 6. Report: `FAIL` rows first, then `NEEDS REVIEW`, then one row with the manual IDs in the ID column, `Confirm by hand` as the check and `NEEDS REVIEW` as the status. Keep every cell to one short sentence. Leave out N/A checks. All counts (FAIL, NEEDS REVIEW, Passed, N/A) are rows; sections that don't apply to the project aren't counted. Add `Mode: quick (P0 only)` under `Source`, put `Passed: <n> · N/A: <n>` just before `VERDICT`, and end with `Run "vibe check" for the full audit.`
