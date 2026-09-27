@@ -1,25 +1,56 @@
 name: release
 
-# Push a tag like v1.0.0 → builds the release zip, uploads it and the agent
-# file to VirusTotal, and publishes a GitHub release with the scan links.
+# Every push to main publishes a release: zip → VirusTotal → GitHub release
+# with the scan links. The version is the latest tag with the patch bumped
+# (v1.1.0 → v1.1.1). For a minor or major bump, run this workflow by hand.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version part to bump
+        type: choice
+        options: [patch, minor, major]
+        default: patch
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Check agent files are in sync
         run: sh scripts/sync-agents.sh --check
 
+      - name: Next version
+        env:
+          BUMP: ${{ inputs.bump || 'patch' }}
+        run: |
+          set -eu
+          last=$(git tag --list 'v[0-9]*' --sort=-v:refname | head -1)
+          ver=${last:-v0.0.0}; ver=${ver#v}
+          major=${ver%%.*}; rest=${ver#*.}; minor=${rest%%.*}; patch=${rest#*.}
+          case "$BUMP" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            *) patch=$((patch + 1)) ;;
+          esac
+          echo "LAST=$last" >> "$GITHUB_ENV"
+          echo "VERSION=v$major.$minor.$patch" >> "$GITHUB_ENV"
+          echo "Next version: v$major.$minor.$patch (last: ${last:-none})"
+
       - name: Build zip
-        run: git archive --format=zip --prefix=vibe-check/ -o "vibe-check-$GITHUB_REF_NAME.zip" HEAD
+        run: git archive --format=zip --prefix=vibe-check/ -o "vibe-check-$VERSION.zip" HEAD
 
       - name: Upload to VirusTotal
         env:
@@ -28,9 +59,13 @@ jobs:
           set -eu
           [ -n "$VT_API_KEY" ] || { echo "Missing secret VT_API_KEY"; exit 1; }
           # CLAUDE.md, AGENTS.md and .cursorrules are identical, so one upload covers all three.
-          for f in "vibe-check-$GITHUB_REF_NAME.zip" agents/CLAUDE.md; do
-            curl -fsS -o /dev/null -H "x-apikey: $VT_API_KEY" -F "file=@$f" https://www.virustotal.com/api/v3/files
-            echo "Uploaded $f"
+          for f in "vibe-check-$VERSION.zip" agents/CLAUDE.md; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -H "x-apikey: $VT_API_KEY" -F "file=@$f" https://www.virustotal.com/api/v3/files)
+            case "$code" in
+              200) echo "Uploaded $f" ;;
+              409) echo "Already on VirusTotal: $f" ;;
+              *) echo "VirusTotal upload failed for $f (HTTP $code)"; exit 1 ;;
+            esac
           done
 
       - name: Publish release
@@ -38,7 +73,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
-          zip="vibe-check-$GITHUB_REF_NAME.zip"
+          zip="vibe-check-$VERSION.zip"
           zip_sha=$(sha256sum "$zip" | cut -d' ' -f1)
           agent_sha=$(sha256sum agents/CLAUDE.md | cut -d' ' -f1)
           cat > notes.md <<EOF
@@ -54,4 +89,7 @@ jobs:
 
           Check a download yourself: \`shasum -a 256 <file>\`
           EOF
-          gh release create "$GITHUB_REF_NAME" "$zip" --title "$GITHUB_REF_NAME" --notes-file notes.md
+          if [ -n "$LAST" ]; then
+            printf '\n## Changes\n\n%s/%s/compare/%s...%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$LAST" "$VERSION" >> notes.md
+          fi
+          gh release create "$VERSION" "$zip" --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md

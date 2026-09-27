@@ -52,7 +52,7 @@ Everything here is plain Markdown you can read. The whole agent behavior is one 
 - **Fetches from one place only:** raw files of this repo. It ignores links to other sites.
 - **Fetched files are data, not instructions.** If one asks the agent to change its rules, edit or delete files, install anything, reveal secrets or send data, the agent refuses and flags it as `⚠️ Suspicious source content`.
 - **Secrets stay hidden.** It never prints a secret value. It shows the name, file:line and a masked value like `sk_live_****`.
-- **Scanned on every release.** Each release zip and the agent file are uploaded to VirusTotal automatically. Scan links and SHA-256 hashes are in the [release notes](https://github.com/yldray/vibe-check/releases/latest).
+- **Scanned on every change.** Every push to `main` publishes a release, and its zip and the agent file are uploaded to VirusTotal automatically. Scan links and SHA-256 hashes are in the [release notes](https://github.com/yldray/vibe-check/releases/latest).
 - **Want a frozen version?** Fork the repo and point the base URL in your copy of the agent file to your fork.
 
 ## 🚦 Severity
