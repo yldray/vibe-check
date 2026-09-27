@@ -87,12 +87,12 @@ Every stack folder has the same 4 files:
 | Stack | Status |
 |---|---|
 | Universal · Release | ✅ Complete |
-| React · Node · .NET · Expo | ✅ Complete |
-| Angular · Vue · Java · Python · Supabase · Firebase · Android · iOS · Flutter | 🌱 Seeded, needs contributors |
+| React · Node · .NET · Expo · Android · iOS | ✅ Complete |
+| Angular · Vue · Java · Python · Supabase · Firebase · Flutter | 🌱 Seeded, needs contributors |
 
 ## 🤝 Contributing
 
-Seen an AI break the same thing twice? That's a test case. 9 of the 14 stacks are only seeded, so every real bug helps.
+Seen an AI break the same thing twice? That's a test case. 7 of the 14 stacks are only seeded, so every real bug helps.
 
 **No time for a PR?** [Open an issue](https://github.com/yldray/vibe-check/issues/new?template=new-test-case.md) with the "New test case" template. Someone will turn it into a check.
 
