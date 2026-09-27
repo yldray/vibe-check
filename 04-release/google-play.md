@@ -3,7 +3,7 @@
 > Policies change often. Always verify against the [Play Console Help Center](https://support.google.com/googleplay/android-developer/).
 
 ## P0
-- [ ] `PLAY-001` Target API level meets the current Play requirement
+- [ ] `PLAY-001` Target API level meets the current Play requirement (from 31 Aug 2026: API 36 for new apps and updates; [official page](https://developer.android.com/google/play/requirements/target-sdk))
 - [ ] `PLAY-002` Signed with upload key; Play App Signing enabled; keystore backed up
 - [ ] `PLAY-003` Data safety form matches what the app really collects (including SDKs)
 - [ ] `PLAY-004` Privacy policy URL in the listing and inside the app
