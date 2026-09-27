@@ -32,7 +32,7 @@
 **Severity:** P1
 **Why it breaks:** No KeyboardAvoidingView / wrong behavior on Android.
 **How to test:** Fill every form on a small Android and iPhone.
-**Pass:** Focused input always visible.
+**Pass:** The focused input and the Save / Submit button stay visible.
 **Fix:** KeyboardAvoidingView or react-native-keyboard-controller.
 
 ### EXPO-006 · FlatList performance

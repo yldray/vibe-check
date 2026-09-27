@@ -12,7 +12,7 @@
 - [ ] `MOB-010` **P1** Small screen, large screen, notch, dark mode, large font
 - [ ] `MOB-011` **P1** Force update / minimum version strategy
 - [ ] `MOB-012` **P1** Cold start (app killed → first usable screen) under 2 seconds on a mid-range device (Android: `adb shell am start -W`; iOS: Instruments → App Launch)
-- [ ] `MOB-013` **P1** The keyboard never covers the field being typed in, on the smallest supported screen
+- [ ] `MOB-013` **P1** The keyboard never covers the field being typed in or the Save / Submit button, on the smallest supported screen
 - [ ] `MOB-014` **P1** Android back button / gesture goes back one screen and never closes the app mid-flow
 - [ ] `MOB-015` **P1** Rotating the phone doesn't break the layout or lose input, or the app is locked to portrait on purpose
 - [ ] `MOB-016` **P2** 10 minutes of continuous use: the phone doesn't overheat and battery use looks normal (Xcode Energy gauge, Android battery usage)
