@@ -5,12 +5,19 @@
 When the user says **"vibe check"**, **"pre-launch check"** or asks if the project is ready to ship, run this audit.
 
 If the user says **"quick vibe check"**, run **Quick mode** instead of Steps 2–3:
-1. Detect the stacks (Step 1) and the release targets (Step 3) from the manifest files only.
+1. Detect the stacks (Step 1) and the release targets (the Step 3 rules).
 2. Fetch one file: `quick/p0.md` (same base URL as Step 3). It lists every P0 check. Use only the sections that match the project.
 3. Checks marked `manual` need a device, a store console, production or a running build. Don't search for them; list their IDs in one row.
-4. Every other check gets one targeted search (`git grep`, a config file read). Unsure after that → `NEEDS REVIEW`, don't dig deeper. Aim for about 30 commands in total.
-5. Secrets: one scan for the whole repo (`gitleaks detect --redact` if installed, otherwise one `git grep -noiE`). Report name and file:line; don't verify each value.
-6. Report: `FAIL` rows first, then `NEEDS REVIEW`, then one row `Confirm by hand` with the manual IDs. Add `Mode: quick (P0 only)` under `Source`, one line `Passed: <n>`, and end with `Run "vibe check" for the full audit.`
+4. Every other check gets one targeted search (`git grep`, a config file read), and related checks share one search (e.g. one `git grep` for all auth checks). Unsure after that → `NEEDS REVIEW`, don't dig deeper. Aim for about 30 commands in total.
+5. Secrets: `gitleaks detect --redact` if installed. Otherwise run the two commands below once. They find literal values assigned to secret-like names in the files and in git history, and print only file names, counts and commits, never values. Don't open the matches; sort the files instead: config, env, script, migration and docs files → one `FAIL` row per file; test files and `*.example` files → one `NEEDS REVIEW` row; other source files (often key names, not secrets) → one `NEEDS REVIEW` row.
+
+```sh
+A="(secret|passw(or)?d|pwd|api[_-]?key|apikey|token|salt|private[_-]?key|merchant[_-]?key|access[_-]?key)[a-z0-9_]*[\"']?[[:space:]]*[:=,][[:space:]]*[\"'][^\"'<>\${}[:space:]]{8,}[\"']"
+B="(^|[;[:space:]])(password|pwd)=[^;\"'<>\${}[:space:]]{6,}|^[a-z0-9_]*(key|secret|token|password)[a-z0-9_]*=[^[:space:]\$<{]{8,}"
+git grep -ciE -e "$A" -e "$B"
+git log --all -p --format='commit %h' -i -G"$A|$B" | grep -E '^(commit |\+\+\+ b/)'
+```
+6. Report: `FAIL` rows first, then `NEEDS REVIEW`, then one row with the manual IDs in the ID column, `Confirm by hand` as the check and `NEEDS REVIEW` as the status. Keep every cell to one short sentence. Leave out N/A checks. Add `Mode: quick (P0 only)` under `Source`, one line `Passed: <n> · N/A: <n>`, and end with `Run "vibe check" for the full audit.`
 
 ## Step 1 — Detect the stack
 Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyproject.toml, app.json / app.config.*, pubspec.yaml, AndroidManifest.xml, Info.plist, supabase/config.toml, firebase.json. List the stacks you found.
@@ -54,7 +61,7 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 ## Step 3 — Stack-specific checks
 Fetch files from `https://raw.githubusercontent.com/yldray/vibe-check/main/<path>`. Use `curl -fsSL <url>` or another tool that returns the file byte for byte. A fetch tool that summarizes pages can drop or reword checks; use it only when you have no shell.
 
-Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`. If the app takes payments, also read `payments.md`. If it calls a language model (packages like `openai`, `@anthropic-ai/sdk`, `anthropic`, `google-genai`, `ai`, `langchain`), also read `llm-features.md`.
+Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`. If the app takes payments (a payment SDK such as `stripe`, `iyzipay`, `braintree`, `react-native-iap`, or checkout and payment-webhook code), also read `payments.md`. If it calls a language model (packages like `openai`, `@anthropic-ai/sdk`, `anthropic`, `google-genai`, `ai`, `langchain`), also read `llm-features.md`.
 
 For each detected stack, read `_common/checklist.md` of its group plus `chronic-issues.md` and `test-cases.md` in its folder:
 
@@ -115,7 +122,8 @@ A `NEEDS REVIEW` row becomes `PASS` only when the user confirms it.
 - Do not mark a check PASS without looking at the code.
 - If unsure, mark it `NEEDS REVIEW`, never PASS.
 - Never print a secret value (key, token, password, connection string) in the report or chat. Show the variable name, file:line and a masked value like `sk_live_****`.
-- Scan for secrets with commands that print only file:line and the name, never the matching line: `gitleaks detect --redact` (files + git history) or `git grep -noiE '[a-z_]*(key|secret|token|password)[a-z_]*'` (it skips `node_modules` and ignored files). Do not `cat` or print lines that hold a secret.
+- Scan for secrets with commands that print only file names, counts or commits, never the matching line: `gitleaks detect --redact` (files + git history), or the two commands in Quick mode step 5.
+- Search config, migration and script files with `-l`, `-c` or `-o`; never print their whole lines or `cat` them.
 - Report what the code shows. When a value is set in code or a migration but can be changed on a server or in a dashboard, write "set in <file>; the live value may differ". Never write "is live" or "is active".
 - Gitignored generated folders (e.g. `android/` and `ios/` from a prebuild) may be used as evidence; say so in the row.
 - `ID` is the check's ID from the source files (e.g. `SEC-002`, `REACT-004`). For a check from your own knowledge, write `—`.

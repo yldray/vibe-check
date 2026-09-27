@@ -40,7 +40,7 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 ### UNI-006 · Mock data left in production
 **Severity:** P0
 **Why it breaks:** Fake users, sample products or `if (DEV)` shortcuts survive.
-**How to test:** Search for `mock`, `fake`, `dummy`, `lorem`, `TODO`, `FIXME`, `test@`.
+**How to test:** Search for `mock`, `fake`, `dummy`, `demo`, `lorem`, `TODO`, `FIXME`, `test@`, `example.com`.
 **Pass:** Nothing in production code paths.
 **Fix:** Remove or move to seed / test files.
 
