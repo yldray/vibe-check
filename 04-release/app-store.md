@@ -13,9 +13,11 @@
 - [ ] `APPSTORE-008` Third-party social login offered → an equivalent privacy-focused login option is also offered (check guideline 4.8)
 - [ ] `APPSTORE-009` Digital goods and subscriptions follow in-app purchase rules for your regions
 - [ ] `APPSTORE-010` Privacy policy URL in App Store Connect and inside the app
+- [ ] `APPSTORE-015` Paywall shows what the user gets, the price, the billing period and that it renews automatically, before purchase (guideline 3.1.2(c) and Schedule 2 of the Apple Developer Program License Agreement)
 
 ## P1
 - [ ] `APPSTORE-011` Screenshots for required device sizes
 - [ ] `APPSTORE-012` Restore purchases button (if IAP)
 - [ ] `APPSTORE-013` Works on the oldest iOS version you support
 - [ ] `APPSTORE-014` Phased release enabled
+- [ ] `APPSTORE-016` Paywall has a close button that is easy to see. There is no explicit rule for it, but apps that trick users into subscribing are removed (guideline 3.1.2(a))
