@@ -5,7 +5,7 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 ### UNI-001 · Hardcoded secrets
 **Severity:** P0
 **Why it breaks:** AI puts API keys directly in code "to make it work".
-**How to test:** Search the repo and git history for keys; run `gitleaks detect`.
+**How to test:** Run `gitleaks detect --redact` (scans files and git history without printing the values).
 **Pass:** Zero findings.
 **Fix:** Move to env variables, rotate every leaked key.
 
