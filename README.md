@@ -55,6 +55,18 @@ Everything here is plain Markdown you can read. The whole agent behavior is one 
 - **Scanned on every change.** Every push to `main` publishes a release, and its zip and the agent file are uploaded to VirusTotal automatically. Scan links and SHA-256 hashes are in the [release notes](https://github.com/yldray/vibe-check/releases/latest).
 - **Want a frozen version?** Fork the repo and point the base URL in your copy of the agent file to your fork.
 
+## 📏 Benchmark
+
+Two intentionally vulnerable projects with **22 planted bugs**, one prompt: "quick vibe check".
+
+| Agent | Found |
+|---|---|
+| Claude Code | 22/22 |
+| Cursor | 22/22 |
+| Codex | 20/22 + 2 partial |
+
+Details, times and how to run it yourself: [`benchmark/`](benchmark/).
+
 ## 🚦 Severity
 
 | Level | Meaning |
@@ -74,6 +86,7 @@ Everything here is plain Markdown you can read. The whole agent behavior is one 
 | [`04-release`](04-release/) | Google Play, App Store and web deploy rules |
 | [`agents`](agents/) | Drop-in files for AI coding agents |
 | [`templates`](templates/) | Test case and bug report templates |
+| [`examples`](examples/) · [`benchmark`](benchmark/) | Vulnerable test projects and the results of running vibe check on them |
 
 Every stack folder has the same 4 files:
 
