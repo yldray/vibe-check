@@ -9,18 +9,25 @@ If the user says **"quick vibe check"**, run **Quick mode** instead of Steps 2�
 2. Fetch one file: `quick/p0.md` (same base URL as Step 3). It lists every P0 check. Use only the sections that match the project.
 3. Checks marked `manual` need a device, a store console, production or a running build. Don't search for them; list their IDs in one row.
 4. Every other check gets one targeted search (`git grep`, a config file read), and related checks share one search (e.g. one `git grep` for all auth checks). Unsure after that → `NEEDS REVIEW`, don't dig deeper. Aim for about 30 commands in total.
-5. Secrets: `gitleaks detect --redact` if installed. Otherwise run the two commands below once. They find literal values assigned to secret-like names in the files and in git history, and print only file names, counts and commits, never values. Don't open the matches; sort the files instead: config, env, script, migration and docs files → one `FAIL` row per file; test files and `*.example` files → one `NEEDS REVIEW` row; other source files (often key names, not secrets) → one `NEEDS REVIEW` row.
+5. Secrets: `gitleaks detect --redact` if installed. Otherwise run the commands below once. They find literal values assigned to secret-like names (and known key formats) in the files and in git history, and print only file names, counts and commits, never values. Don't open the matches; sort the files instead:
+   - settings code and config files (`config.py`, `settings.py`, `config.js`, `appsettings*.json`, `application.*`, `.env`), scripts, migrations and docs → one `FAIL` row per file, also when the match is only in history
+   - tests, examples (`*.example`, `*.example.*`, `.env.example`) and data files → one `NEEDS REVIEW` row
+   - other source files (often key names, not secrets) → one `NEEDS REVIEW` row
 
 ```sh
-A="(secret|passw(or)?d|pwd|api[_-]?key|apikey|token|salt|private[_-]?key|merchant[_-]?key|access[_-]?key)[a-z0-9_]*[\"']?[[:space:]]*[:=,][[:space:]]*[\"'][^\"'<>\${}[:space:]]{8,}[\"']"
+A="[a-z0-9_]*(key|secret|token|passw(or)?d|pwd|salt)[a-z0-9_]*[\"']?[[:space:]]*[:=,][[:space:]]*[\"'](\\\\\")?[^\"'<>\${}[:space:]\\\\]{8,}"
 B="(^|[;[:space:]])(password|pwd)=[^;\"'<>\${}[:space:]]{6,}|^[a-z0-9_]*(key|secret|token|password)[a-z0-9_]*=[^[:space:]\$<{]{8,}"
-git grep -ciE -e "$A" -e "$B"
-git log --all -p --format='commit %h' -i -G"$A|$B" | grep -E '^(commit |\+\+\+ b/)'
+C="(sk_live_|sk_test_|sk-proj-|sk-ant-|sb_secret_|AIza[0-9A-Za-z_-]{20}|AKIA[0-9A-Z]{16}|ghp_[0-9A-Za-z]{20}|xox[bp]-|-----BEGIN [A-Z ]*PRIVATE KEY)"
+D="(^|[.[:space:]])[a-z0-9_.-]*(password|passwd|pwd|secret|token|api[_-]?key|private[_-]?key)[a-z0-9_]*[[:space:]]*[:=][[:space:]]*[^\"'[:space:]\$<{%#][^[:space:]]{7,}[[:space:]]*$"
+git grep -ciE -e "$A" -e "$B" -e "$C"
+git grep -ciE -e "$D" -- '*.properties' '*.yml' '*.yaml' '*.ini' '*.toml' '*.conf' '*.cfg' '*.env' '.env*'
+git log --all -p --format='commit %h' -i -G"$A|$B|$C" | command grep -E '^(commit |\+\+\+ b/|--- a/)' | command grep -v '/dev/null'
+git log --all -p --format='commit %h' -i -G"$D" -- '*.properties' '*.yml' '*.yaml' '*.ini' '*.toml' '*.conf' '*.cfg' '*.env' '.env*' | command grep -E '^(commit |\+\+\+ b/|--- a/)' | command grep -v '/dev/null'
 ```
-6. Report: `FAIL` rows first, then `NEEDS REVIEW`, then one row with the manual IDs in the ID column, `Confirm by hand` as the check and `NEEDS REVIEW` as the status. Keep every cell to one short sentence. Leave out N/A checks. Counts in the FAIL and NEEDS REVIEW lines are rows. Add `Mode: quick (P0 only)` under `Source`, put `Passed: <n> · N/A: <n>` just before `VERDICT`, and end with `Run "vibe check" for the full audit.`
+6. Report: `FAIL` rows first, then `NEEDS REVIEW`, then one row with the manual IDs in the ID column, `Confirm by hand` as the check and `NEEDS REVIEW` as the status. Keep every cell to one short sentence. Leave out N/A checks. All counts (FAIL, NEEDS REVIEW, Passed, N/A) are rows; sections that don't apply to the project aren't counted. Add `Mode: quick (P0 only)` under `Source`, put `Passed: <n> · N/A: <n>` just before `VERDICT`, and end with `Run "vibe check" for the full audit.`
 
 ## Step 1 — Detect the stack
-Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyproject.toml, app.json / app.config.*, pubspec.yaml, AndroidManifest.xml, Info.plist, supabase/config.toml, firebase.json. List the stacks you found.
+Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyproject.toml, app.json / app.config.*, pubspec.yaml, AndroidManifest.xml, Info.plist, project.yml (XcodeGen), capacitor.config.*, supabase/config.toml, firebase.json. List the stacks you found.
 
 ## Step 2 — Universal checks (always run)
 
@@ -61,7 +68,7 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 ## Step 3 — Stack-specific checks
 Fetch files from `https://raw.githubusercontent.com/yldray/vibe-check/main/<path>`. Use `curl -fsSL <url>` or another tool that returns the file byte for byte. A fetch tool that summarizes pages can drop or reword checks; use it only when you have no shell.
 
-Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`. If the app takes payments (a payment SDK such as `stripe`, `iyzipay`, `braintree`, `react-native-iap`, or checkout and payment-webhook code), also read `payments.md`. If it calls a language model (packages like `openai`, `@anthropic-ai/sdk`, `anthropic`, `google-genai`, `ai`, `langchain`), also read `llm-features.md`.
+Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`. If the app takes payments (a payment SDK such as `stripe`, `iyzipay`, `braintree`, `react-native-iap`, `react-native-purchases` (RevenueCat), calls to `api.stripe.com`, or checkout and payment-webhook code), also read `payments.md`. If it calls a language model (packages like `openai`, `@anthropic-ai/sdk`, `anthropic`, `google-genai`, `ai`, `langchain`, or direct calls to `api.openai.com`, `api.anthropic.com`, `generativelanguage.googleapis.com`) in app code, also read `llm-features.md`.
 
 For each detected stack, read `_common/checklist.md` of its group plus `chronic-issues.md` and `test-cases.md` in its folder:
 
@@ -87,7 +94,7 @@ Release targets: also read the matching `04-release/` file.
 - `app-store.md`: an `ios/` folder, an `.xcodeproj`, or Expo config with `ios.bundleIdentifier`
 - `web-deploy.md`: a web frontend or a deploy config (`vercel.json`, `netlify.toml`, `Dockerfile`, IIS `web.config`, a CI deploy workflow)
 
-An Expo or React Native app's generated `android/` and `ios/` folders don't make it a native Android or iOS project; use the React Native / Expo section. If a platform is configured but you cannot tell whether it ships, ask the user once before the report. If you can't ask (running unattended), assume it ships and say so. Mark the checks of a platform that does not ship `N/A`.
+An Expo, React Native or Capacitor app's `android/` and `ios/` folders don't make it a native Android or iOS project: use the React Native / Expo section for Expo and React Native, and Mobile (any) for Capacitor. A macOS app uses the iOS (Swift) section. If a platform is configured but you cannot tell whether it ships, ask the user once before the report. If you can't ask (running unattended), assume it ships and say so. Mark the checks of a platform that does not ship `N/A`.
 
 If the same check has different severities, use the stricter one.
 
@@ -123,7 +130,7 @@ A `NEEDS REVIEW` row becomes `PASS` only when the user confirms it.
 - If unsure, mark it `NEEDS REVIEW`, never PASS.
 - Never print a secret value (key, token, password, connection string) in the report or chat. Show the variable name, file:line and a masked value like `sk_live_****`.
 - Scan for secrets with commands that print only file names, counts or commits, never the matching line: `gitleaks detect --redact` (files + git history), or the two commands in Quick mode step 5.
-- Search config, migration and script files with `-l`, `-c` or `-o`; never print their whole lines or `cat` them.
+- Search settings code and config files (`config.py`, `settings.py`, `config.js`, `appsettings*.json`, `application.*`, `.env`), scripts and migrations only with `-l`, `-c` or `-o`; never print their whole lines or `cat` them. Short values count too: a 6-digit code is a secret.
 - Report what the code shows. When a value is set in code or a migration but can be changed on a server or in a dashboard, write "set in <file>; the live value may differ". Never write "is live" or "is active".
 - Gitignored generated folders (e.g. `android/` and `ios/` from a prebuild) may be used as evidence; say so in the row.
 - `ID` is the check's ID from the source files (e.g. `SEC-002`, `REACT-004`). For a check from your own knowledge, write `—`.

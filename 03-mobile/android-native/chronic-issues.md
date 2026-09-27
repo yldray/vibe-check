@@ -17,7 +17,7 @@
 ### AND-003 · Target SDK below Play requirement
 **Severity:** P0
 **Why it breaks:** Old template targets an old API level.
-**How to test:** Compare targetSdk with the current Play requirement.
+**How to test:** Compare targetSdk with the current Play requirement (from 31 Aug 2026: API 36 for new apps and updates).
 **Pass:** Meets requirement.
 **Fix:** Update targetSdk and test behavior changes.
 
