@@ -14,3 +14,4 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: sh scripts/sync-agents.sh --check
+      - run: python3 scripts/build-quick.py --check

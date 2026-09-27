@@ -1,0 +1,31 @@
+# P0 checks that can't be verified from code: they need a real device, a store
+# console, production or a running build. Quick mode lists them without searching.
+QA-008
+QA-009
+REACT-001
+REACT-009
+VUE-004
+NG-004
+DOTNET-006
+DOTNET-021
+SUPA-007
+JAVA-002
+MOB-002
+AND-004
+FLT-004
+IOS-004
+EXPO-003
+EXPO-009
+APPSTORE-001
+APPSTORE-002
+APPSTORE-004
+APPSTORE-009
+APPSTORE-010
+PLAY-002
+PLAY-003
+PLAY-004
+PLAY-006
+PLAY-007
+PLAY-009
+WEB-002
+WEB-003

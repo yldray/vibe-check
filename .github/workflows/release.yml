@@ -32,6 +32,9 @@ jobs:
       - name: Check agent files are in sync
         run: sh scripts/sync-agents.sh --check
 
+      - name: Check quick/p0.md is up to date
+        run: python3 scripts/build-quick.py --check
+
       - name: Next version
         env:
           BUMP: ${{ inputs.bump || 'patch' }}
