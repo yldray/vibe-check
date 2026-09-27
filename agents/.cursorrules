@@ -59,6 +59,8 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 - [ ] `PAY-007` Test and live payment keys are separate per environment (if the app takes payments)
 - [ ] `LLM-001` `LLM-004` AI endpoints have spending limits, and the model never decides permissions (if the app calls an LLM)
 - [ ] `LLM-005` Model output is never rendered as raw HTML (if the app calls an LLM)
+- [ ] `CLOUD-001` `CLOUD-004` No public storage buckets, and databases and admin panels aren't reachable from the internet (if the repo has cloud or deploy config)
+- [ ] `CLOUD-002` `CLOUD-003` Cloud keys are least-privilege, and no secrets are baked into Docker images (if the repo has cloud or deploy config)
 
 ### P1
 - [ ] `UNI-010` List endpoints are paginated
@@ -68,7 +70,7 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 ## Step 3 — Stack-specific checks
 Fetch files from `https://raw.githubusercontent.com/yldray/vibe-check/main/<path>`. Use `curl -fsSL <url>` or another tool that returns the file byte for byte. A fetch tool that summarizes pages can drop or reword checks; use it only when you have no shell.
 
-Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`. If the app takes payments (a payment SDK such as `stripe`, `iyzipay`, `braintree`, `react-native-iap`, `react-native-purchases` (RevenueCat), calls to `api.stripe.com`, or checkout and payment-webhook code), also read `payments.md`. If it calls a language model (packages like `openai`, `@anthropic-ai/sdk`, `anthropic`, `google-genai`, `ai`, `langchain`, or direct calls to `api.openai.com`, `api.anthropic.com`, `generativelanguage.googleapis.com`) in app code, also read `llm-features.md`.
+Always read `00-universal/ai-code-pitfalls.md`, `security-baseline.md`, `env-and-config.md`, `legal-privacy.md`, `qa-ux.md`, `auth-flows.md`, `jobs-and-deploy.md`, `performance-baseline.md`, `accessibility.md`. If the repo has deploy or cloud config (`Dockerfile`, `docker-compose.*`, Terraform, cloud SDKs such as `@aws-sdk/*`, `boto3`, `@google-cloud/*`, `@azure/*`), also read `cloud-infra.md`. If the app takes payments (a payment SDK such as `stripe`, `iyzipay`, `braintree`, `react-native-iap`, `react-native-purchases` (RevenueCat), calls to `api.stripe.com`, or checkout and payment-webhook code), also read `payments.md`. If it calls a language model (packages like `openai`, `@anthropic-ai/sdk`, `anthropic`, `google-genai`, `ai`, `langchain`, or direct calls to `api.openai.com`, `api.anthropic.com`, `generativelanguage.googleapis.com`) in app code, also read `llm-features.md`.
 
 For each detected stack, read `_common/checklist.md` of its group plus `chronic-issues.md` and `test-cases.md` in its folder:
 
