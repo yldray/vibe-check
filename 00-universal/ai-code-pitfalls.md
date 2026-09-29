@@ -78,3 +78,10 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 **How to test:** Search for similar function names / blocks.
 **Pass:** One source of truth.
 **Fix:** Extract a shared module.
+
+### UNI-012 · Check-then-insert race
+**Severity:** P1
+**Why it breaks:** AI checks first ("is the slot free?", "is there stock?", "was this coupon used?") and writes in a second step. Two requests at the same moment both pass the check: double bookings, overselling, a coupon used twice, duplicate accounts.
+**How to test:** Send the same request 20 times in parallel (e.g. `seq 20 | xargs -P 20 -I{} curl ...`, or k6) against booking, checkout, coupon and signup endpoints.
+**Pass:** Exactly one succeeds; the others get a clear error.
+**Fix:** Let the database decide: a unique constraint, an atomic update (`UPDATE ... SET stock = stock - 1 WHERE stock > 0`) or a transaction with locking. An app-level check alone is not enough.
