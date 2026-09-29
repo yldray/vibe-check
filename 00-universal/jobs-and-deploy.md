@@ -49,3 +49,13 @@ Scheduled work, queues, migrations and the pipeline that ships them.
 - [ ] `OPS-007` **P1** Long work (e-mails, exports, AI calls, image processing) runs in a queue, not inside the request
 - [ ] `OPS-008` **P1** Schedules use UTC or an explicit time zone and survive daylight-saving changes
 - [ ] `OPS-009` **P1** CI logs never print secrets (no `set -x` around them, no `echo $TOKEN`)
+
+## CI workflows (GitHub Actions)
+
+AI writes these by copying snippets. Check every file in `.github/workflows/`.
+
+- [ ] `OPS-010` **P0** No `pull_request_target` workflow checks out or runs code from the pull request: a fork's PR would run with your secrets and a write token
+- [ ] `OPS-011` **P0** No `${{ github.event.* }}` value (PR title, issue body, branch name, commit message) is written straight into a `run:` script; pass it through `env:` and quote the variable
+- [ ] `OPS-012` **P1** Every workflow sets `permissions:` to the least it needs (e.g. `contents: read`), never `write-all`
+- [ ] `OPS-013` **P2** Third-party actions are pinned to a full commit SHA, not a moving tag like `@v1` or `@main`
+- [ ] `OPS-014` **P2** Every job has `timeout-minutes`, so a stuck job doesn't burn runner minutes for hours
