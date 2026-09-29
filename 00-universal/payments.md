@@ -50,3 +50,4 @@ Only if the app takes payments. Webhook signatures and idempotency are in `BE-00
 - [ ] `PAY-008` **P1** Money is stored in minor units (cents) or a decimal type, never in floats (see `JS-003`)
 - [ ] `PAY-009` **P1** Every order ends in a final state (paid, failed, refunded); orders stuck in "pending" are checked against the provider every day
 - [ ] `PAY-010` **P1** Customers get a receipt or invoice as your country requires
+- [ ] `PAY-011` **P1** The total price, including taxes and fees, is shown before the user pays; nothing is added at the last step
