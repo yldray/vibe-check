@@ -56,6 +56,7 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 - [ ] `AUTH-001` Tokens are verified (signature, algorithm, expiry), not just decoded
 - [ ] `AUTH-002` Reset links and one-time codes expire, work once and are stored hashed
 - [ ] `OPS-001` Migrations are reviewed as SQL before deploy and don't break the running version
+- [ ] `OPS-010` `OPS-011` No `pull_request_target` workflow runs PR code, and no `${{ github.event.* }}` value goes straight into a `run:` script (if the repo has GitHub Actions workflows)
 - [ ] `PAY-001` `PAY-002` `PAY-003` Price, access and premium status are decided on the server, never by the client or the success page (if the app takes payments)
 - [ ] `PAY-007` Test and live payment keys are separate per environment (if the app takes payments)
 - [ ] `LLM-001` `LLM-004` AI endpoints have spending limits, and the model never decides permissions (if the app calls an LLM)
@@ -110,6 +111,7 @@ Output exactly this format:
 VIBE CHECK REPORT
 Stacks: <detected>
 Source: online / partial (<missing files>) / offline
+Not checked: <folders you skipped and checks you couldn't do, or "—">
 
 | ID | Severity | Check | Status | File:line | Fix |
 |----|----------|-------|--------|-----------|-----|
@@ -128,6 +130,7 @@ Status values:
 A `NEEDS REVIEW` row becomes `PASS` only when the user confirms it.
 
 ## Rules
+- Fill `Not checked` honestly. Large repos tempt skipping folders; a skipped folder listed there is better than a clean-looking report.
 - Do not fix anything until the user approves the report.
 - Do not mark a check PASS without looking at the code.
 - If unsure, mark it `NEEDS REVIEW`, never PASS.
