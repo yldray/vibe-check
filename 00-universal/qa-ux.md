@@ -63,3 +63,4 @@ What AI-built UIs get wrong, and what to click through by hand before launch.
 - [ ] `QA-013` **P1** Error messages say what happened and what to do next, in the user's language; no raw `500`, `undefined` or stack text
 - [ ] `QA-014` **P1** After every action the user can tell it worked (updated list, message or redirect)
 - [ ] `QA-015` **P2** Copy proofread: no typos, the same term for the same thing, button labels are verbs
+- [ ] `QA-016` **P1** Every translation file has the same keys as the main language: no missing, empty or untranslated entries (compare the key lists with a script or an i18n linter)
