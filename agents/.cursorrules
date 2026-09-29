@@ -50,6 +50,7 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 - [ ] `WEB-004` `MOB-004` Error tracking / crash reporting exists in production
 - [ ] `LEGAL-001` `LEGAL-003` Privacy policy and terms of service published if you collect any personal data
 - [ ] `LEGAL-002` Users can delete their account and data (if the app has accounts)
+- [ ] `LEGAL-012` Age check and parental consent where the law asks (if children may use the app)
 - [ ] `QA-008` Main flow works end to end on production with a fresh account (sign up, verify, main action, payment)
 - [ ] `QA-009` Transactional e-mails arrive and their links point to production, not localhost (if the app sends e-mail)
 - [ ] `AUTH-001` Tokens are verified (signature, algorithm, expiry), not just decoded
