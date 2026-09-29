@@ -136,6 +136,10 @@ Seen an AI break the same thing twice? That's a test case. 7 of the 14 stacks ar
 
 Full rules, including how to add a new stack: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## 🙏 Credits
+
+Some checks were inspired by the rule categories of [open-code-review](https://github.com/alibaba/open-code-review) (Apache-2.0). Ideas only; no text was copied.
+
 ## 📄 License
 
 MIT
