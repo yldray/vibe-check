@@ -37,6 +37,13 @@ Only if the repo has deploy or cloud config: a `Dockerfile`, `docker-compose.*`,
 **Pass:** The app runs as a non-root user.
 **Fix:** Create a user in the image and switch to it with `USER`.
 
+### CLOUD-011 · Things that run out silently
+**Severity:** P1
+**Why it breaks:** Production depends on limits nobody watches: a prepaid AI or API balance, a token or password that expires or is revoked, a free trial, the card behind the CI or hosting account, a time-limited database edition, one personal account that owns the integration (locked for "unusual activity"), and the server disk (database logs with no log backups, old build folders). When one runs out, features fail with a polite fallback message and nobody is told.
+**How to test:** List every paid or credentialed dependency with owner account, admins, expiry date, balance and billing contact. Revoke one key in staging and see who is alerted. Check free disk on every server, each database's recovery model and last log backup.
+**Pass:** Balance, expiry and failed-payment alerts reach a technical owner; auth, quota and billing errors raise an alert (not just a log line); at least two admins per integration under a company account; a disk alert at 80%; at least one health check runs outside the CI provider.
+**Fix:** Auto-recharge or low-balance alerts; calendar reminders 30 days before expiry; service tokens instead of personal ones; log backups or simple recovery; scheduled cleanup of build folders.
+
 ## Before launch
 
 - [ ] `CLOUD-006` **P1** A billing budget alert exists in every cloud account the app uses

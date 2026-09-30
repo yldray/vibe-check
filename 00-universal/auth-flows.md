@@ -44,6 +44,27 @@ Login, sessions, password reset and one-time codes: where AI-written auth breaks
 **Pass:** The same response for both, or a deliberate product decision to show it.
 **Fix:** A generic message: "If an account exists, we sent you a link."
 
+### AUTH-009 · Backdoors left in the production login
+**Severity:** P0
+**Why it breaks:** To test login without an e-mail provider, or to get App Review past an OTP screen, AI adds a shortcut: a master code that works for any account, the code returned in the API response, a "forgot password" endpoint that sets a fixed password with no proof, or seed/demo accounts with a shared or guessable password. A config flag or nothing guards it, and it reaches production. Anyone who knows an e-mail address can log in as that user.
+**How to test:** Request a code for an address you don't own and read the full response body. Grep code, config and seeds for `devCode`, `debugCode`, `bypass`, `fixed`, `master`, literal 4–6 digit codes and literal passwords. Call every reset endpoint without a valid code. List accounts in the production DB created by a seed, a script or the agent, and try the seed/README passwords on the live login.
+**Pass:** No response contains a code; reset needs proof of ownership; no seed or default account can log in; a reviewer shortcut (if any) is one non-admin account, rate-limited, time-boxed, stored only in server settings, and off after approval.
+**Fix:** Delete the shortcut or tie it to development builds only; refuse to start in production if a bypass setting is present; create the first admin with a one-time random password or invite link; for store review see `APPSTORE-002`.
+
+### AUTH-010 · Account found by an unnormalized or shared phone or e-mail
+**Severity:** P0
+**Why it breaks:** AI writes `u.Phone == input` or `u.Email == input` with `FirstOrDefault()`. Stored values came from imports in other formats (spaces, dashes, country code) or other case, so real users can't reset their password. After normalizing, several accounts share one value (family members), and the reset or login lands on someone else's account. A flow that "identifies" a caller with two knowable facts and then writes their new phone or e-mail into the record lets anyone attach their channel to another person's account.
+**How to test:** Try reset and login with the same phone in five formats and the same e-mail in different case. Count stored values shared by 2+ accounts after normalization. With a second test phone, identify as another test customer using only knowable facts and check whether your number is now on their record.
+**Pass:** All formats find the same single account; a shared value is refused with a support path; a new contact channel is bound only after a code sent to the channel already on file.
+**Fix:** Normalize on write and on lookup (digits only / E.164; lowercase e-mail), backfill, add a unique index where the field must be unique, treat "more than one match" as an error, and verify the existing channel before changing it.
+
+### AUTH-011 · Role checks that aren't on the endpoint
+**Severity:** P0
+**Why it breaks:** AI protects admin actions with a list of URL prefixes in middleware (a new endpoint isn't in the list; a different case or trailing slash skips it), with a list of user IDs in the page's JavaScript while the API only checks "logged in", or with an invite / role-assignment endpoint that takes the target role from the request body. Realtime hubs (SignalR, Socket.IO) get none of the checks the REST controllers have.
+**How to test:** Log in as the lowest role. Call every admin endpoint directly, also in upper case, with a trailing slash and URL-encoded. Call each invite and role endpoint with every higher role. Call hub methods from a script with a lower role and with the feature switched off.
+**Pass:** 403 in every variant; nobody can grant a role equal to or above their own; hubs enforce the same rules as REST.
+**Fix:** Put the policy on each endpoint or route group with a deny-by-default fallback; a server-side table of which role may grant which; one authorization service shared by controllers and hubs; UI lists only mirror server permissions.
+
 ## Before launch
 
 - [ ] `AUTH-007` **P1** E-mail (or phone) is verified before the account can pay, post or invite others

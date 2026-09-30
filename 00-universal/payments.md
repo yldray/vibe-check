@@ -44,6 +44,20 @@ Only if the app takes payments. Webhook signatures and idempotency are in `BE-00
 **Pass:** One charge.
 **Fix:** Disable the button while the request runs, and send an idempotency key when creating the payment.
 
+### PAY-012 · Payment callback says OK before it processed
+**Severity:** P0
+**Why it breaks:** AI returns the success body the provider expects ("OK", 200) on every path: order not found, hash mismatch, missing config, or a DB error caught as "already processed". The provider stops retrying, the card is charged and access is never granted. With an empty signing key the hash is computed with an empty key, so anyone can forge a valid callback. A second checkout attempt overwrites the order reference, so the first tab's payment comes back for a reference that no longer exists.
+**How to test:** Send the callback with an unknown order, a wrong hash, the DB stopped and the merchant key blanked. Start checkout in two tabs and pay in the first.
+**Pass:** Each failure returns a non-success response and logs an error; the handler refuses to run without its key; the first tab's payment still grants access.
+**Fix:** Return success only after the order is committed as paid; on replays check the entitlement really exists; fail closed when secrets are missing; make each payment attempt a child record of the order instead of overwriting it. See `PAY-004`.
+
+### PAY-013 · Payment records deleted with their parent
+**Severity:** P0
+**Why it breaks:** AI deletes a plan, schedule or subscription together with its children, and the children include real payments, or a new purchase deletes the previous subscription row instead of closing it. Revenue history disappears, and later store or provider webhooks for the old subscription find nothing to update, so cancellations and double subscriptions go unseen.
+**How to test:** Record a payment under a plan and delete the plan; buy, then upgrade or re-buy, then send a cancel event for the first subscription. Check the payments table, the revenue report and the webhook log.
+**Pass:** Payments, invoices and old subscription rows survive; the cancel webhook finds its subscription.
+**Fix:** Treat payment and subscription history as append-only: `Restrict` instead of cascade, soft delete or a status change, never a hard delete.
+
 ## Before launch
 
 - [ ] `PAY-007` **P0** Test and live keys (and webhook secrets) are separate per environment; production uses live keys, nothing else does (see `ENV-003`)

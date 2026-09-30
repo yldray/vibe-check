@@ -65,6 +65,13 @@ Only if the app calls a language model. Provider keys in the client are covered 
 **Pass:** The model ID lives in config and isn't deprecated.
 **Fix:** Move it to config; follow the provider's deprecation notices. See `UNI-009`.
 
+### LLM-016 · Bulk AI-generated content published unchecked
+**Severity:** P1
+**Why it breaks:** AI generates the question bank, help articles or blog posts in one go and they go live as the product's official answer: invented references, answer keys that contradict their own explanations, steps that don't exist on the user's platform, articles that contradict each other, backdated publish dates and near-duplicate pages that search engines won't index. An admin "mark fixed" button republishes items without anything changing.
+**How to test:** Before publishing, run automatic checks (references against a real source, key vs explanation, duplicates) and have a person follow a sample of items end to end. Compare publish dates with the repo history.
+**Pass:** Generated items start inactive and need a named reviewer and a verified date; failed items sit in a queue where they can be edited; dates are real.
+**Fix:** Validator plus quarantine plus a human review queue; "approve" only after the content changed; publish at a steady pace; merge or `noindex` thin pages.
+
 ## Before launch
 
 - [ ] `LLM-010` **P1** Users are told they're talking to an AI and that answers can be wrong. In the EU this is required by the AI Act, Article 50, from 2 August 2026 ([Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj))

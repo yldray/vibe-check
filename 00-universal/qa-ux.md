@@ -53,13 +53,20 @@ What AI-built UIs get wrong, and what to click through by hand before launch.
 **Pass:** The right keyboard opens and autofill works (email, phone, one-time code, password).
 **Fix:** Web: set `type`, `inputmode` and `autocomplete`. React Native: set `keyboardType` and `autoComplete` / `textContentType`.
 
+### QA-017 · File imports that run twice, guess or drop rows
+**Severity:** P1
+**Why it breaks:** AI writes the importer for the happy path: one file is one document, every file is a supported type, every row is valid, running twice is harmless. In practice the same batch is imported twice, a merged PDF counts as one document, only the first sheet is read, a column dragged down with one repeated value is accepted, a missing unit is assumed, sentinel values like "N/D" are dropped, an unsupported file sits in the inbox with no alert, and re-importing an export applies a markup twice.
+**How to test:** Import the same file twice (also renamed); a merged multi-document file; an unsupported type; a workbook with several sheets; a column with one value in every row; missing units and sentinel values; an export re-imported. Compare rows in vs out.
+**Pass:** Every input row is imported or listed as skipped with a reason; duplicates are refused by business key; unsupported or suspicious files go to a rejected folder with an alert; the summary shows read / imported / skipped counts.
+**Fix:** Content hash plus a unique business key; a rejected folder with a reason; row-level sanity rules; no default units or fuzzy auto-match; round-trip-safe export columns; regression tests with real anonymized files.
+
 ## Manual QA before launch
 
 - [ ] `QA-008` **P0** On production, with a fresh account: sign up, verify, do the main action and pay (if the app takes payments), end to end
-- [ ] `QA-009` **P0** Transactional e-mails arrive in the inbox (not spam), and every link in them points to production, not localhost (if the app sends e-mail)
+- [ ] `QA-009` **P0** Transactional e-mails arrive in the inbox (not spam) at Gmail, Outlook, Yahoo and iCloud, and every link in them points to production, not localhost (if the app sends e-mail). The sending domain has exactly one SPF record (no `+all`), DKIM set up as the provider says (CNAME vs TXT) and a DMARC record; check `dkim=pass` in the raw headers. Re-test after every hosting, DNS or mail-provider change. Login and reset codes use their own sender, never the mailbox used for bulk mail or load tests
 - [ ] `QA-010` **P1** Session expires mid-action: the user is sent to login and comes back to the same place; nothing fails silently
 - [ ] `QA-011` **P1** Slow network (DevTools "Slow 4G" / "3G"): every action shows progress within 1 second
-- [ ] `QA-012` **P1** Locale: special letters (e.g. Turkish İ/ı) sort, search and uppercase correctly; long translations don't break the layout; dates, numbers and currency follow the user's locale
+- [ ] `QA-012` **P1** Locale: special letters (e.g. Turkish İ/ı) sort, search and uppercase correctly, also inside keys (e-mails, codes, import headers: use invariant lowercasing), PDFs (embed a font with those glyphs) and DB columns (Unicode types, not Latin1 `varchar`); no mojibake in seed files; long translations don't break the layout; times are stored in UTC and converted once for display; dates, numbers and currency follow the user's locale
 - [ ] `QA-013` **P1** Error messages say what happened and what to do next, in the user's language; no raw `500`, `undefined` or stack text
 - [ ] `QA-014` **P1** After every action the user can tell it worked (updated list, message or redirect)
 - [ ] `QA-015` **P2** Copy proofread: no typos, the same term for the same thing, button labels are verbs

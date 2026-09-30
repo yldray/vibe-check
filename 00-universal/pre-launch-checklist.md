@@ -13,6 +13,10 @@ One-page summary. `→` points to the full check: same check, same severity.
 - [ ] `PRE-008` DB backup exists and a restore was tested once → `WEB-003`
 - [ ] `PRE-009` Error tracking connected (Sentry or similar) → `WEB-004` `MOB-004`
 - [ ] `PRE-010` Privacy policy + terms published (if you collect personal data) → `LEGAL-001` `LEGAL-003`
+- [ ] `PRE-020` App refuses to start with a missing, placeholder or dev-default setting → `ENV-005`
+- [ ] `PRE-021` No login backdoors, codes in responses or seed accounts in production → `AUTH-009`
+- [ ] `PRE-022` Every production host runs the commit you pushed → `OPS-015`
+- [ ] `PRE-023` New and changed SQL ran once on production-shaped schema and data → `UNI-017`
 
 ## P1 — First week
 - [ ] `PRE-011` Rate limiting on auth and expensive endpoints → `SEC-007`
