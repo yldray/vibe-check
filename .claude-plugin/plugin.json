@@ -1,0 +1,11 @@
+{
+  "name": "vibe-check",
+  "description": "Pre-launch audit for AI-written code: secrets, auth, payments, store rules and each stack's chronic bugs. Say \"vibe check\" or \"quick vibe check\".",
+  "author": {
+    "name": "Yıldıray Taşbaş"
+  },
+  "homepage": "https://github.com/yldray/vibe-check",
+  "repository": "https://github.com/yldray/vibe-check",
+  "license": "MIT",
+  "keywords": ["audit", "security", "pre-launch", "checklist", "qa", "app-store", "google-play"]
+}

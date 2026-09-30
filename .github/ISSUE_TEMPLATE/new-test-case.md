@@ -1,6 +1,7 @@
 ---
-name: New test case / chronic issue
-about: Suggest a bug AI tools keep producing
+name: New check
+about: A bug AI tools keep producing that vibe-check doesn't cover yet
+title: "[new check] "
 labels: new-test-case
 ---
 

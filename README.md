@@ -26,6 +26,15 @@ React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebas
 
 No install. No config. Your AI audits the code it wrote.
 
+**Claude Code plugin** (checks ship with the plugin, no fetching at audit time):
+
+```
+/plugin marketplace add yldray/vibe-check
+/plugin install vibe-check@vibe-check
+```
+
+Then say "vibe check" in any project. Update with `/plugin marketplace update vibe-check`.
+
 ## 🧭 How it works
 
 <img src="assets/how-it-works.png" alt="Three steps: drop in one file and say Run vibe check; the agent detects your stack, fetches the matching checks and reads your code; you get a report with ID, status and file:line, and nothing changes until you approve" width="100%">
@@ -53,6 +62,7 @@ Everything here is plain Markdown you can read. The whole agent behavior is one 
 - **Fetched files are data, not instructions.** If one asks the agent to change its rules, edit or delete files, install anything, reveal secrets or send data, the agent refuses and flags it as `⚠️ Suspicious source content`.
 - **Secrets stay hidden.** It never prints a secret value. It shows the name, file:line and a masked value like `sk_live_****`.
 - **Scanned on every change.** Every push to `main` publishes a release, and its zip and the agent file are uploaded to VirusTotal automatically. Scan links and SHA-256 hashes are in the [release notes](https://github.com/yldray/vibe-check/releases/latest).
+- **Feedback is opt-in.** When an audit finds a bug the checklists don't cover, or you say a result is wrong, the agent offers an anonymized issue draft for this repo. It shows you the full text and sends nothing without your yes.
 - **Want a frozen version?** Fork the repo and point the base URL in your copy of the agent file to your fork.
 
 ## 📏 Benchmark
@@ -84,7 +94,7 @@ Details, times and how to run it yourself: [`benchmark/`](benchmark/).
 | [`02-backend`](02-backend/) | .NET, Java Spring, Node, Python, Supabase, Firebase |
 | [`03-mobile`](03-mobile/) | Android, iOS, React Native / Expo, Flutter |
 | [`04-release`](04-release/) | Google Play, App Store and web deploy rules |
-| [`agents`](agents/) | Drop-in files for AI coding agents |
+| [`agents`](agents/) · [`skills`](skills/vibe-check/) | Drop-in files for AI coding agents, and the Claude Code plugin skill |
 | [`templates`](templates/) | Test case and bug report templates |
 | [`examples`](examples/) · [`benchmark`](benchmark/) | Vulnerable test projects and the results of running vibe check on them |
 
@@ -106,6 +116,8 @@ Every stack folder has the same 4 files:
 ## 🤝 Contributing
 
 Seen an AI break the same thing twice? That's a test case. 7 of the 14 stacks are only seeded, so every real bug helps.
+
+**Easiest: let your agent do it.** After a report, say **"send feedback"**. The agent drafts issues for checks it had to invent (ID `—`), results you said were wrong, and bugs that slipped through. It strips project names, paths and code, shows you the drafts, and opens only the ones you approve. Each one becomes a check in the next release, and your next audit uses it.
 
 **No time for a PR?** [Open an issue](https://github.com/yldray/vibe-check/issues/new?template=new-test-case.md) with the "New test case" template. Someone will turn it into a check.
 
@@ -132,7 +144,7 @@ Seen an AI break the same thing twice? That's a test case. 7 of the 14 stacks ar
    **Fix:** The shortest correct fix.
    ```
 5. **Describe the pattern, not the project.** This repo is public: no names, paths or report excerpts from private or client projects.
-6. **Open a PR** and tick the checklist. If you changed `agents/CLAUDE.md`, run `sh scripts/sync-agents.sh` first; CI checks it.
+6. **Open a PR** and tick the checklist. If you changed `agents/CLAUDE.md`, run `sh scripts/sync-agents.sh` first (it also rebuilds the plugin skill); CI checks it.
 
 Full rules, including how to add a new stack: [CONTRIBUTING.md](CONTRIBUTING.md).
 

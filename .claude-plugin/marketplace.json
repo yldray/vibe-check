@@ -1,0 +1,15 @@
+{
+  "name": "vibe-check",
+  "description": "vibe-check: pre-launch test cases, chronic bugs and store-release rules for AI-written code.",
+  "owner": {
+    "name": "Yıldıray Taşbaş"
+  },
+  "plugins": [
+    {
+      "name": "vibe-check",
+      "source": "./",
+      "description": "Pre-launch audit for AI-written code: secrets, auth, payments, store rules and each stack's chronic bugs. Say \"vibe check\" or \"quick vibe check\".",
+      "category": "security"
+    }
+  ]
+}

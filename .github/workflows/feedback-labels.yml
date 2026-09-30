@@ -1,0 +1,29 @@
+name: feedback-labels
+
+# Issues sent by the agent (Step 5 in agents/CLAUDE.md) come from `gh issue create`,
+# which can't set labels for people outside the repo. Label them by title prefix.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - env:
+          TITLE: ${{ github.event.issue.title }}
+          NUMBER: ${{ github.event.issue.number }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          case "$TITLE" in
+            "[new check]"*) label=new-test-case ;;
+            "[false positive]"*) label=false-positive ;;
+            "[missed bug]"*) label=missed-bug ;;
+            *) exit 0 ;;
+          esac
+          gh issue edit "$NUMBER" --add-label "$label"

@@ -10,7 +10,7 @@
 - [ ] `PERF-008` **P1** Core Web Vitals are "good" at the 75th percentile: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (PageSpeed Insights or the `web-vitals` library on real users)
 - [ ] `PERF-009` **P1** The slow query log is on, and the slowest queries were checked with `EXPLAIN`: no full table scans on large tables
 - [ ] `PERF-010` **P1** Serverless or edge functions reach the database through a connection pooler, so traffic spikes don't hit "too many connections"
-- [ ] `PERF-011` **P1** Static assets have hashed file names and long cache headers (`Cache-Control: public, max-age=31536000, immutable`); HTML is not cached for long
+- [ ] `PERF-011` **P1** Static assets have hashed file names (or a `?v=<commit>` stamp for hand-written and server-rendered pages) and long cache headers (`Cache-Control: public, max-age=31536000, immutable`); HTML is not cached for long; a replaced image or video gets a new URL. Test: deploy a CSS or image change and reload normally in a browser (and the mobile app) that visited before: the new version shows without a hard refresh
 - [ ] `PERF-012` **P1** Text responses (HTML, JS, CSS, JSON) are compressed with gzip or Brotli
 - [ ] `PERF-013` **P2** A 30-minute soak test shows flat memory and stable response times
 - [ ] `PERF-014` **P2** A performance budget runs in CI (bundle size limit or Lighthouse CI) and fails the build when it's exceeded

@@ -37,6 +37,7 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 - [ ] `ENV-001` `ENV-002` `.env` files are in `.gitignore`; an `.env.example` exists
 - [ ] `ENV-003` Separate keys for dev / staging / prod
 - [ ] `ENV-004` Debug mode and verbose logging off in production
+- [ ] `ENV-005` App refuses to start when a required setting is missing, empty, a placeholder or the dev default
 - [ ] `UNI-003` `UNI-004` Every protected endpoint checks auth AND authorization (user A cannot read user B's data)
 - [ ] `SEC-002` Passwords hashed with bcrypt / argon2 (never plain, MD5 or SHA1)
 - [ ] `UNI-005` Input is validated on the server, not only on the client
@@ -45,6 +46,10 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 - [ ] `BE-004` Errors do not leak stack traces or internal details to users
 - [ ] `UNI-006` No mock data, fake users, test flags or "TODO: add auth" left in production paths
 - [ ] `UNI-002` Every imported package really exists and is the intended one (hallucinated package check)
+- [ ] `UNI-013` `UNI-014` A status says "done" only after the effect happened, and a save never overwrites fields the form didn't send
+- [ ] `UNI-015` `UNI-016` Safety checks block when a lookup fails or is unknown; missing data stops the item instead of falling back to a guessed default
+- [ ] `UNI-017` New or changed SQL has run once on production-shaped schema and data before deploy
+- [ ] `SEC-012` `SEC-013` Codes, tokens and keys come from a CSPRNG; server-side fetches of user-supplied URLs block internal and metadata addresses
 - [ ] `WEB-001` HTTPS only; cookies are `Secure` + `HttpOnly` + `SameSite`
 - [ ] `WEB-003` Database has backups and a restore was tested
 - [ ] `WEB-004` `MOB-004` Error tracking / crash reporting exists in production
@@ -55,10 +60,13 @@ Read package.json, *.csproj, pom.xml / build.gradle, requirements.txt / pyprojec
 - [ ] `QA-009` Transactional e-mails arrive and their links point to production, not localhost (if the app sends e-mail)
 - [ ] `AUTH-001` Tokens are verified (signature, algorithm, expiry), not just decoded
 - [ ] `AUTH-002` Reset links and one-time codes expire, work once and are stored hashed
+- [ ] `AUTH-009` `AUTH-010` `AUTH-011` No login backdoors (master code, code in the response, seed accounts); accounts are found by a normalized, unique phone or e-mail; role checks sit on every endpoint and realtime hub
 - [ ] `OPS-001` Migrations are reviewed as SQL before deploy and don't break the running version
+- [ ] `OPS-015` Every host that serves the app runs the commit you pushed (a version endpoint matches)
 - [ ] `OPS-010` `OPS-011` No `pull_request_target` workflow runs PR code, and no `${{ github.event.* }}` value goes straight into a `run:` script (if the repo has GitHub Actions workflows)
 - [ ] `PAY-001` `PAY-002` `PAY-003` Price, access and premium status are decided on the server, never by the client or the success page (if the app takes payments)
 - [ ] `PAY-007` Test and live payment keys are separate per environment (if the app takes payments)
+- [ ] `PAY-012` `PAY-013` Payment callbacks answer "OK" only after the order is saved as paid, and payment records are never cascade-deleted (if the app takes payments)
 - [ ] `LLM-001` `LLM-004` AI endpoints have spending limits, and the model never decides permissions (if the app calls an LLM)
 - [ ] `LLM-005` Model output is never rendered as raw HTML (if the app calls an LLM)
 - [ ] `CLOUD-001` `CLOUD-004` No public storage buckets, and databases and admin panels aren't reachable from the internet (if the repo has cloud or deploy config)
@@ -128,6 +136,19 @@ Status values:
 - `N/A` — it does not apply to this project; say why in `Fix`.
 
 A `NEEDS REVIEW` row becomes `PASS` only when the user confirms it.
+
+## Step 5 — Feedback
+vibe-check gets better from what audits find. Count these items, in both modes:
+- **New check:** a P0 or P1 row with ID `—` (a bug the checklists don't cover).
+- **False positive:** the user says a `FAIL` row is wrong, or a check doesn't fit its stack.
+- **Missed bug:** the user tells you about a bug that reached production and the report should have caught.
+
+If there are any, end the report with `Feedback for vibe-check: <n> item(s). Say "send feedback" to see the drafts.` When the user says "send feedback" (also later in the session):
+1. Write one draft per item with the title `[new check] …`, `[false positive] …` or `[missed bug] …` and the fields of the matching template in `.github/ISSUE_TEMPLATE/` of this repo. Describe the pattern, not the project: no project, company or person names, URLs, file paths, code copied from the project, report excerpts, user data or secrets, even masked. Show code only as a minimal generic example you write yourself.
+2. Show every draft in full and ask which ones to send. Send nothing without a clear yes.
+3. Send the approved ones with `gh issue create --repo yldray/vibe-check --title "<title>" --body-file <file>`, with the body in a temp file outside the project. No `gh` or not logged in → give the user the drafts and `https://github.com/yldray/vibe-check/issues/new/choose`.
+
+The audit itself never sends anything anywhere.
 
 ## Rules
 - Fill `Not checked` honestly. Large repos tempt skipping folders; a skipped folder listed there is better than a clean-looking report.
