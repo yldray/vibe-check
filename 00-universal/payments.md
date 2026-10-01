@@ -58,6 +58,55 @@ Only if the app takes payments. Webhook signatures and idempotency are in `BE-00
 **Pass:** Payments, invoices and old subscription rows survive; the cancel webhook finds its subscription.
 **Fix:** Treat payment and subscription history as append-only: `Restrict` instead of cascade, soft delete or a status change, never a hard delete.
 
+### PAY-014 · A pending result treated as failed or paid
+**Severity:** P0
+**Why it breaks:** Providers answer "pending" in many forms: PayTR `wait_callback`, Stripe `processing`, a status inquiry that says "unknown", a store purchase awaiting approval. AI maps everything that isn't "success" to failure, so the job tries again and charges twice, or maps it to success and unlocks before the money arrives. A status lookup that errors is also read as "failed".
+**How to test:** Mock a pending answer and an erroring status lookup; run the charge path twice.
+**Pass:** Three outcomes. Pending is stored with the provider's order id, blocks a new charge for that customer, and is settled later by inquiry or webhook; an unknown status stays pending.
+**Fix:** An explicit pending state on the order; a settle step before every new charge. See `UNI-016`.
+
+### PAY-015 · The renewal job charges twice in one cycle
+**Severity:** P0
+**Why it breaks:** A self-run renewal job (your own cron, not the provider's subscriptions) charges twice when: it "catches up" every day it missed since the last run; the "already charged today" guard looks only at paid orders, so a failed attempt is retried by the next run; the job framework's automatic retry (Hangfire, Sidekiq, BullMQ defaults) reruns the whole list after one exception; a manual trigger or a lock timeout starts a second run.
+**How to test:** Run the job twice on the same day, once after a failed attempt, once with one subscriber throwing; set the last-run date a week back.
+**Pass:** Each subscriber is attempted at most once per cycle, whatever the outcome; one pass, no replay of missed days; automatic retry off; errors caught per subscriber.
+**Fix:** Guard on "attempted this cycle" (any status); `due_date <= today` already catches missed days; disable framework retries for charge jobs. See `OPS-003`.
+
+### PAY-016 · The renewal job silently skips subscribers
+**Severity:** P0
+**Why it breaks:** AI selects who to charge with a magic filter (`plan_id < 900`, a hardcoded list of plan types). A new paid plan or campaign falls outside it: those subscribers are never charged, no error is logged and they keep watching or using the product for free.
+**How to test:** Create a subscriber on the newest paid plan with an expired period and run the selection query.
+**Pass:** Selection is by plan properties (paid, recurring, provider that owns renewal), and a daily report lists active subscribers past their period who were not attempted.
+**Fix:** Select by what the plan is, not its id; alert on "expired but not attempted".
+
+### PAY-017 · A new order status breaks every query that reads orders
+**Severity:** P1
+**Why it breaks:** You start writing failed (0) or pending (2) rows to the orders table, which used to hold only paid rows. Queries written for "only paid rows exist" now pick the latest row (empty card token), count attempts as payments (campaign counters advance early), and reports show failed attempts as revenue.
+**How to test:** `git grep` every read of the orders table; check each one filters by the paid status.
+**Pass:** Every reader filters the status it means.
+**Fix:** Add the filter everywhere in the same change, or put attempts in their own table. See `UNI-013`.
+
+### PAY-018 · A store plan change opens a second subscription
+**Severity:** P0
+**Why it breaks:** On Android, AI upgrades or downgrades with a plain purchase of the new product. Google creates a second subscription, and the user pays both in the same month. On iOS the same happens when the products are in different subscription groups.
+**How to test:** Subscribe to plan A in a test track, switch to plan B in the app, and check the store's subscription list.
+**Pass:** One active subscription after the change.
+**Fix:** Android: a replacement purchase with the old purchase token and an explicit replacement mode; iOS: all plans in one subscription group. Server: one store transaction id binds to one account.
+
+### PAY-019 · One user, two providers, two active subscriptions
+**Severity:** P1
+**Why it breaks:** The app sells through web (card provider), App Store and Google Play, or is moving from one provider to another. Nothing checks for an existing active subscription before creating a new one, so users pay twice, and cancelling one leaves the other running.
+**How to test:** Subscribe on the web, then buy in the app with the same account; list the account's active subscriptions.
+**Pass:** The second purchase is blocked or the user is told and the first is cancelled; reports flag accounts with more than one active subscription.
+**Fix:** Check active subscriptions across providers before checkout; a daily report for duplicates.
+
+### PAY-020 · Wrong amount on the success page, purchase counted twice
+**Severity:** P1
+**Why it breaks:** The success page shows a hard-coded fallback price when the real one is missing (a discounted user sees the full price), and analytics fire the purchase event on every load, refresh and iframe redirect with a `Date.now()` id, so revenue in ads and analytics is inflated.
+**How to test:** Pay with a discount, refresh the success page, open it from the 3D Secure iframe; compare the amount shown and the events sent.
+**Pass:** The amount comes from the paid order; one purchase event per order, deduplicated by the order id.
+**Fix:** Load the order by id; use it as the event id; one path from the payment iframe to the page (`postMessage`).
+
 ## Before launch
 
 - [ ] `PAY-007` **P0** Test and live keys (and webhook secrets) are separate per environment; production uses live keys, nothing else does (see `ENV-003`)
@@ -65,3 +114,5 @@ Only if the app takes payments. Webhook signatures and idempotency are in `BE-00
 - [ ] `PAY-009` **P1** Every order ends in a final state (paid, failed, refunded); orders stuck in "pending" are checked against the provider every day
 - [ ] `PAY-010` **P1** Customers get a receipt or invoice as your country requires
 - [ ] `PAY-011` **P1** The total price, including taxes and fees, is shown before the user pays; nothing is added at the last step
+- [ ] `PAY-021` **P1** After any change to provider request fields, URLs or keys, one real production payment passes and the daily count of successful payments is watched with an alert (health checks stay green while payments drop to zero)
+- [ ] `PAY-022` **P1** Billing period and price logic lives in one place; if two services must compute it (checkout and the renewal job), they share code or tests with the same cases

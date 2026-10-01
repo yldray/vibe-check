@@ -14,6 +14,7 @@
 - [ ] `WEB-009` SPA fallback / redirects configured
 - [ ] `WEB-010` Rollback plan tested once
 - [ ] `WEB-011` Custom 404 / 500 pages
+- [ ] `WEB-014` Redirect and rewrite rules don't match API routes (a `/news` rule must not catch `/api/news`); `/api/*` is curled after adding one
 
 ## P2
 - [ ] `WEB-012` Sitemap, robots.txt, OG images

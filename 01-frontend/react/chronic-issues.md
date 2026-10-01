@@ -56,6 +56,13 @@
 **Pass:** No hydration warnings.
 **Fix:** Move client-only code to useEffect or a client component.
 
+### REACT-024 · Hook after an early return
+**Severity:** P0
+**Why it breaks:** AI adds `if (loading) return <Spinner/>` above a `useMemo` or `useEffect`. The number of hooks changes between renders and React crashes ("Rendered more hooks than during the previous render", minified error #310). With a warm cache the loading branch never runs, so it passes locally and crashes for new users.
+**How to test:** `eslint-plugin-react-hooks` with `rules-of-hooks` as an error; open the screen with an empty cache and a slow network.
+**Pass:** Lint is clean; the screen renders from the loading state.
+**Fix:** All hooks above the first conditional return.
+
 ## Next.js server (Server Actions, route handlers, proxy / middleware)
 
 ### REACT-018 · Server Action without auth

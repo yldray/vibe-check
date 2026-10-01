@@ -19,3 +19,8 @@
 - [ ] `MOB-017` **P2** Caches have a size limit: app storage doesn't keep growing after days of use
 - [ ] `MOB-018` **P1** Blind test: someone who has never seen the app can say what the home screen is for, without help
 - [ ] `MOB-019` **P1** Clean install: delete the app, reinstall and walk the whole first-run flow (onboarding, permissions, login). On iOS the Keychain survives uninstall, so old tokens can come back
+
+- [ ] `MOB-020` **P1** The new build number is one above the highest in App Store Connect / Play Console, not above the local value
+- [ ] `MOB-021` **P1** Store builds are made from a commit that is pushed and tagged, never from local changes
+- [ ] `MOB-022` **P2** After a library upgrade, every `patch-package` patch still applies and `postinstall` fails loudly when one doesn't
+- [ ] `MOB-023` **P1** First-run bugs are tested with empty persisted storage (clean install or cleared cache); a warm cache hides crashes such as hooks after an early return

@@ -65,6 +65,13 @@ Scheduled work, queues, migrations and the pipeline that ships them.
 **Pass:** Deploy notes state the order; new code degrades clearly (or refuses to start, naming what is missing) when a dependency is absent.
 **Fix:** Deploy schema and backend first, then clients; tolerant readers or feature flags; a startup check for required config; see `OPS-001`, `ENV-005`.
 
+### OPS-018 · A rewrite drops what shipped clients still call
+**Severity:** P0
+**Why it breaks:** When a backend is rewritten or moved, AI ports the endpoints it finds in the new client code. Shipped mobile and TV apps that users haven't updated still call the old route names and send old fields. The missing endpoint returns 404 after the store has already charged the user, so no subscription is written; a missing field silently writes a 1970 date.
+**How to test:** List every route and field called by every client version still in use (old backend code + client code + access logs) and call each one against the new backend.
+**Pass:** Every route still answers with the same contract, or the old app version is blocked with an update prompt.
+**Fix:** A contract list from access logs; aliases for old routes; a minimum-version gate before removing anything. See `OPS-017`.
+
 ## Before launch
 
 - [ ] `OPS-007` **P1** Long work (e-mails, exports, AI calls, image processing) runs in a queue, not inside the request
@@ -80,3 +87,10 @@ AI writes these by copying snippets. Check every file in `.github/workflows/`.
 - [ ] `OPS-012` **P1** Every workflow sets `permissions:` to the least it needs (e.g. `contents: read`), never `write-all`
 - [ ] `OPS-013` **P2** Third-party actions are pinned to a full commit SHA, not a moving tag like `@v1` or `@main`
 - [ ] `OPS-014` **P2** Every job has `timeout-minutes`, so a stuck job doesn't burn runner minutes for hours
+
+## Found in production
+
+- [ ] `OPS-019` **P1** Nothing the app writes at runtime (toggles, uploaded JSON, generated files) lives inside the deploy folder; the next deploy would wipe it
+- [ ] `OPS-020` **P1** Commits pushed by a workflow with `GITHUB_TOKEN` don't start other workflows; if a bot commit must deploy, the workflow triggers the deploy itself or uses a token that can
+- [ ] `OPS-021` **P1** After every deploy a business number is checked (payments, sign-ups, logins in the last hour), not only `/health`
+- [ ] `OPS-022` **P1** Jobs registered at app start (Hangfire `AddOrUpdate`, cron libraries) come back after you delete them in the dashboard; stopping one for good removes it in code
