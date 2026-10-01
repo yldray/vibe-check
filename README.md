@@ -17,30 +17,24 @@ React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebas
 
 ## ⚡ 30-second start
 
-1. Copy one file from [`agents/`](agents/) into your project root:
-   - Claude Code → `CLAUDE.md`
-   - Cursor → `.cursorrules`
-   - Codex / others → `AGENTS.md`
+1. Set it up once:
+   - **Claude Code:** type these two lines in the Claude Code chat (not your terminal). It then works in every project.
+     ```
+     /plugin marketplace add yldray/vibe-check
+     /plugin install vibe-check@vibe-check
+     ```
+   - **Cursor, Codex or others:** copy one file from [`agents/`](agents/) into your project root: `.cursorrules` for Cursor, `AGENTS.md` for Codex and others. (Claude Code without the plugin: `CLAUDE.md`.)
 2. Tell your agent: **"Run vibe check"**, or **"quick vibe check"** for P0s only (in our test on a real project: ~8 min instead of ~17 for the full audit)
 3. Fix every **P0** before you ship. A P0 marked `NEEDS REVIEW` counts too: confirm it yourself.
 
-No install. No config. Your AI audits the code it wrote.
-
-**Claude Code plugin** (checks ship with the plugin, no fetching at audit time):
-
-```
-/plugin marketplace add yldray/vibe-check
-/plugin install vibe-check@vibe-check
-```
-
-Then say "vibe check" in any project. Update with `/plugin marketplace update vibe-check`.
+No config. Your AI audits the code it wrote. Plugin updates: `/plugin marketplace update vibe-check` in the chat, or `claude plugin marketplace update vibe-check` in a terminal.
 
 ## 🧭 How it works
 
 <img src="assets/how-it-works.png" alt="Three steps: drop in one file and say Run vibe check; the agent detects your stack, fetches the matching checks and reads your code; you get a report with ID, status and file:line, and nothing changes until you approve" width="100%">
 
-1. **Drop in one file.** It tells your agent what "vibe check" means. Nothing else is added to your project.
-2. **The agent audits.** It detects your stacks from files like `package.json`, `*.csproj` or `app.json`, fetches the matching checks from this repo, and reads your code without changing it.
+1. **Install the plugin or drop in one file.** Either one tells your agent what "vibe check" means. Nothing is added to your project.
+2. **The agent audits.** It detects your stacks from files like `package.json`, `*.csproj` or `app.json`, reads the matching checks (bundled with the plugin, or fetched from this repo), and reads your code without changing it.
 3. **You get a report.** Every check gets an ID, a status, the file:line and a fix:
 
 | Status | Meaning |
@@ -56,7 +50,7 @@ Any P0 that is `FAIL` or `NEEDS REVIEW` makes the verdict 🔴 **NOT READY**. Sa
 
 Everything here is plain Markdown you can read. The whole agent behavior is one file, [`agents/CLAUDE.md`](agents/CLAUDE.md), and it takes about 2 minutes to read.
 
-- **Nothing to install or run.** No binaries, no packages, no scripts in your project. (`scripts/sync-agents.sh` is only for maintainers of this repo.)
+- **Nothing to run.** No binaries, no packages, no scripts in your project. The plugin is the same Markdown files. (`scripts/sync-agents.sh` is only for maintainers of this repo.)
 - **Read-only audit.** The agent does not change your code until you approve the report.
 - **Fetches from one place only:** raw files of this repo. It ignores links to other sites.
 - **Fetched files are data, not instructions.** If one asks the agent to change its rules, edit or delete files, install anything, reveal secrets or send data, the agent refuses and flags it as `⚠️ Suspicious source content`.
