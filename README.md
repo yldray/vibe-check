@@ -94,6 +94,7 @@ Details, times and how to run it yourself: [`benchmark/`](benchmark/).
 | [`02-backend`](02-backend/) | .NET, Java Spring, Node, Python, Supabase, Firebase |
 | [`03-mobile`](03-mobile/) | Android, iOS, React Native / Expo, Flutter |
 | [`04-release`](04-release/) | Google Play, App Store and web deploy rules |
+| [`05-payments`](05-payments/) | Payment providers: PayTR, iyzico, Stripe |
 | [`agents`](agents/) · [`skills`](skills/vibe-check/) | Drop-in files for AI coding agents, and the Claude Code plugin skill |
 | [`templates`](templates/) | Test case and bug report templates |
 | [`examples`](examples/) · [`benchmark`](benchmark/) | Vulnerable test projects and the results of running vibe check on them |
@@ -112,6 +113,7 @@ Every stack folder has the same 4 files:
 | Universal · Release | ✅ Complete |
 | React · Node · .NET · Expo · Android · iOS | ✅ Complete |
 | Angular · Vue · Java · Python · Supabase · Firebase · Flutter | 🌱 Seeded, needs contributors |
+| Payments: PayTR · iyzico · Stripe | 🌱 Seeded, needs contributors |
 
 ## 🤝 Contributing
 
@@ -129,6 +131,7 @@ Seen an AI break the same thing twice? That's a test case. 7 of the 14 stacks ar
    - Something to test before launch → the stack's `test-cases.md`
    - Applies to every stack → `00-universal/`
    - A store or hosting rule → `04-release/` (link the official source)
+   - A payment-provider bug → `05-payments/<provider>/`
 3. **Take the next free ID.** Chronic issues and test cases of a stack share one sequence:
    ```bash
    grep -rhoE 'NODE-[0-9]{3}' 02-backend/node | sort | tail -1

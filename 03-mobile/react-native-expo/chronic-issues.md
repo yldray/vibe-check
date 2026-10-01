@@ -55,3 +55,17 @@
 **How to test:** Open a link with the app killed and in background.
 **Pass:** Opens the right screen both times.
 **Fix:** Configure scheme + associated domains; handle initial URL.
+
+### EXPO-019 · Invisible layers swallow touches
+**Severity:** P1
+**Why it breaks:** Controls hidden with `opacity: 0`, a root-level `<Modal>` that never closed, or a native fullscreen player left mounted sit on top of the screen. The UI looks fine but nothing responds to taps, often only after a notification opens the app.
+**How to test:** Hide the player controls, open the app from a notification, close a video; tap every button.
+**Pass:** Every visible control responds.
+**Fix:** `pointerEvents="none"` on hidden layers; an overlay `View` instead of a root `Modal`; unmount native fullscreen views.
+
+### EXPO-020 · Notification tap navigates before the screen exists
+**Severity:** P1
+**Why it breaks:** The tap handler calls `navigate` while the user is logged out or the target stack isn't mounted yet. React Navigation throws or shows a black screen, and a retry loop keeps firing.
+**How to test:** Kill the app, log out, tap a notification; repeat while logged in.
+**Pass:** Logged out: login first, then the target opens; logged in: the target opens once.
+**Fix:** Store the pending target and apply it once the stack is ready; skip `reset` if already on that route.

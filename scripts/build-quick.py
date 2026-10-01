@@ -38,6 +38,9 @@ SECTIONS = [
     ("04-release/google-play.md", "Release: Google Play"),
     ("04-release/app-store.md", "Release: App Store"),
     ("04-release/web-deploy.md", "Release: web"),
+    ("05-payments/paytr", "Payments: PayTR"),
+    ("05-payments/iyzico", "Payments: iyzico"),
+    ("05-payments/stripe", "Payments: Stripe"),
 ]
 SKIP = {"00-universal/pre-launch-checklist.md", "00-universal/README.md"}
 

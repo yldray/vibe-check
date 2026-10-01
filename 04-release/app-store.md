@@ -14,6 +14,8 @@
 - [ ] `APPSTORE-009` Digital goods and subscriptions follow in-app purchase rules for your regions
 - [ ] `APPSTORE-010` Privacy policy URL in App Store Connect and inside the app
 - [ ] `APPSTORE-015` Subscriptions: the paywall shows what the user gets, the price, the billing period and that it renews automatically, before purchase (guideline 3.1.2(c) and Schedule 2 of the Apple Developer Program License Agreement)
+- [ ] `APPSTORE-017` `UIBackgroundModes` lists only modes the app really uses; an unused `audio` mode is rejected under [Guideline 2.5.4](https://developer.apple.com/app-store/review/guidelines/#software-requirements)
+- [ ] `APPSTORE-018` No button, link or call to action to buy outside the app on any account or plan type, including the review demo account, except where Apple allows it for your storefront ([Guideline 3.1.1](https://developer.apple.com/app-store/review/guidelines/#in-app-purchase))
 
 ## P1
 - [ ] `APPSTORE-011` Screenshots for required device sizes

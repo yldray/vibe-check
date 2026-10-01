@@ -14,6 +14,8 @@
 - [ ] `PLAY-009` Release build tested (R8 / ProGuard on)
 - [ ] `PLAY-014` Subscriptions: the paywall discloses the offer terms, price, billing frequency and automatic renewal; a free trial says when it turns paid, for how much and how to cancel ([Subscriptions policy](https://support.google.com/googleplay/android-developer/answer/9900533))
 - [ ] `PLAY-015` Subscriptions: the paywall has a clearly visible dismiss button; Play lists a missing or hidden one as a policy violation ([Subscriptions policy](https://support.google.com/googleplay/android-developer/answer/9900533))
+- [ ] `PLAY-016` No button, link or call to action to pay outside Google Play billing on any account or plan type, including the review test account ([Payments policy](https://support.google.com/googleplay/android-developer/answer/9858738))
+- [ ] `PLAY-017` Every foreground service type in the manifest is used and declared in Play Console; a new type in an update needs a new declaration ([foreground service requirements](https://support.google.com/googleplay/android-developer/answer/13392821))
 
 ## P1
 - [ ] `PLAY-010` Store listing: screenshots for phone (and tablet if supported), feature graphic, short + full description

@@ -148,3 +148,38 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 **How to test:** Force the second step to fail (bad value, too-long string, DB stopped) and inspect every table; time out the external call; make the save fail after a fetch. For group writes check every member.
 **Pass:** Either all steps land or none, and the user sees the error; external calls happen after commit with a timeout; the source is removed only after the copy is committed.
 **Fix:** One transaction per business action; an outbox (or "commit, then send"); explicit timeouts; move, don't hard-delete, sources; idempotent re-reads by message ID.
+
+### UNI-022 · Shadow tables: the code writes the dead copy
+**Severity:** P1
+**Why it breaks:** An older table and a newer one hold the same thing (orders, plans, cancellations). AI finds the old one first, by name, and reads revenue from it or writes plan changes to it. Nothing errors; the change just has no effect, or the report is quietly wrong.
+**How to test:** List table pairs with the same meaning; for each, check which one the live flows write today, then grep for code that touches the other.
+**Pass:** One canonical table per concept, written in the project notes; legacy tables are read-only or dropped.
+**Fix:** Document the canonical table; rename legacy ones with a `legacy_` prefix or revoke write access; migrate the remaining readers.
+
+### UNI-023 · Test and internal accounts counted as customers
+**Severity:** P1
+**Why it breaks:** Each new report, payout or metric is written from scratch and forgets to exclude test users, staff accounts and deleted rows. Revenue, payouts to partners and conversion numbers are off, and the exclusion gets re-added report by report.
+**How to test:** Make a test-user purchase and a deleted-user purchase; check every report and payout.
+**Pass:** Neither appears; the exclusion lives in one shared query, view or helper.
+**Fix:** A single "real customers" filter used by every report; see `UNI-011`.
+
+### UNI-024 · An error inside a 200 response is read as success
+**Severity:** P1
+**Why it breaks:** The API returns HTTP 200 with `{"status":"ERROR"}`, wraps data in different envelopes (`result`, `data`, `responseData`) or, from an old backend, sends JSON encoded twice as a string. AI checks only `res.ok`, guesses the field name, or parses once, so failures look like success and lists render empty.
+**How to test:** Call each client function against a real response, an error response and the old backend; log what the UI receives.
+**Pass:** One client wrapper checks the HTTP status AND the body status, unwraps the envelope, and throws on anything else.
+**Fix:** Look at a real response before writing the parser; centralize parsing in one function. See `QA-002`.
+
+### UNI-025 · Percent in the form, fraction in the database
+**Severity:** P1
+**Why it breaks:** The database stores a ratio as a fraction (0.05) and the form shows a percent (5), or the other way round. AI saves the typed value as-is, and a royalty, discount or commission becomes 100× (or 20×, when two formats coexist) too big or too small. Decimal columns with too small a scale round 0.125 to 0.13 as well.
+**How to test:** Enter 5% in the form, save, read the raw DB value, reopen the form; enter 12.5%.
+**Pass:** The round trip shows 5% and 12.5%; the DB holds the documented unit with full precision.
+**Fix:** One documented unit per column; convert in one place; match the ORM's decimal precision to the DB.
+
+### UNI-026 · Dates shift by the server's time zone
+**Severity:** P1
+**Why it breaks:** The API sends a local date-time without a zone; the admin form runs it through `new Date()` and `toISOString()`, so a release time moves by the UTC offset, a "to" filter ends at midnight and drops the last day, or a date saved near midnight lands on the previous day.
+**How to test:** Save 23:30 local time, reload; filter a report "from 1st to 31st" and check that the 31st is included.
+**Pass:** Times round-trip unchanged; date ranges include the whole last day.
+**Fix:** Send zones explicitly (ISO with offset) or treat zone-less values as strings; build ranges as `< next day`. See `OPS-008`.
