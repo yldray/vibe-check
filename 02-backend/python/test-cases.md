@@ -1,6 +1,12 @@
-# Python (FastAPI / Django) — pre-launch test cases
-
-> 🌱 Seeded list. Contributions welcome.
+# Python (Django / FastAPI / Flask) — pre-launch test cases
 
 - [ ] `PY-004` **P0** Secrets not in settings.py
 - [ ] `PY-005` **P1** Migrations tested on empty DB
+- [ ] `PY-022` **P0** JWTs are verified, not just decoded: no `options={"verify_signature": False}`, no `algorithms` taken from the token's own header, no python-jose `get_unverified_claims()` on an auth path (python-jose before 3.4.0 has CVE-2024-33663), and every `OAuth2PasswordBearer` dependency goes on to `jwt.decode(token, key, algorithms=["HS256"])` (the scheme alone only checks that a Bearer header exists). Test: `grep -rnE "verify_signature|get_unverified_(claims|header)|OAuth2PasswordBearer|jwt\.decode" --include=*.py .`, then the forged-token test of `AUTH-001`
+- [ ] `PY-023` **P1** Django: `python manage.py check --deploy --fail-level WARNING` exits 0 with the production settings (without `--fail-level` it exits 0 even with warnings). It catches DEBUG, a short or `django-insecure-` key, missing CSRF middleware, insecure session and CSRF cookies, and missing HTTPS redirect or HSTS, but not `ALLOWED_HOSTS = ['*']` (see `PY-006`)
+- [ ] `PY-024` **P1** Every model change ships with a migration and nothing creates tables at startup. Test: CI runs `python manage.py makemigrations --check --dry-run` or `alembic check`, and `grep -rn "create_all(" --include=*.py .` finds nothing in app startup; `create_all()` never adds a column to an existing table (see `OPS-001`)
+- [ ] `PY-025` **P1** Gunicorn / Uvicorn: production runs more than one worker and the timeout fits the slowest request. Gunicorn defaults to one `sync` worker and kills any worker silent for 30 s (`[CRITICAL] WORKER TIMEOUT`, then a 502 from the proxy). Test: read `--workers` / `WEB_CONCURRENCY` and `--timeout` in the start command, then call the slowest endpoint (LLM call, export) on staging; longer work goes to a queue (see `OPS-007`)
+- [ ] `PY-026` **P1** FastAPI: `/docs`, `/redoc` and `/openapi.json` return 404 on production (`openapi_url=None`, or read from settings) or sit behind auth (see `DOTNET-019`)
+- [ ] `PY-027` **P1** Every `requests` call has `timeout=` (requests waits forever by default) and none uses `verify=False`. Test: `bandit -r . -t B113,B501` (see `BE-009`)
+- [ ] `PY-028` **P1** List endpoints run a fixed number of queries whatever the row count. Test: call each list with 1 row and with 20 under Django's `assertNumQueries` (fix with `select_related` / `prefetch_related`, also for nested serializers), or with SQLAlchemy relationships set to `lazy="raise"` in tests (fix with `selectinload` / `joinedload`) (see `PERF-003`)
+- [ ] `PY-029` **P1** No handler ends in `except Exception as e:` with `str(e)` in the response (`HTTPException(500, detail=str(e))`, `Response({"error": str(e)})`, `jsonify(error=str(e))`): that sends SQL and driver text to the client and turns an `HTTPException(404)` raised inside the `try` into a 500. Test: grep handlers for `str(e)`; request a missing record and expect 404 (see `BE-004`)
