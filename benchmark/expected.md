@@ -13,10 +13,10 @@ Answer key for the two projects in `examples/`. Don't give this file to the agen
 | 5 | Service account JSON with a private key in client assets | `vue-app/src/assets/service-account.json` | `FIRE-004` |
 | 6 | `bypassSecurityTrustHtml` on user text | `angular-admin/src/app/note-view.component.ts` | `NG-003` |
 | 7 | Admin guard trusts `localStorage`, the API has no role check | `angular-admin/src/app/admin.guard.ts` | `NG-005` |
-| 8 | All actuator endpoints exposed | `api/src/main/resources/application.properties` | `JAVA-003` |
-| 9 | `permitAll` on `/**` with a TODO | `api/src/main/java/shop/SecurityConfig.java` | `JAVA-004` `UNI-003` |
-| 10 | CORS `*` with credentials | `api/src/main/java/shop/SecurityConfig.java` | `SEC-005` |
-| 11 | SQL built by string concatenation | `api/src/main/java/shop/OrderController.java` | `SEC-004` |
+| 8 | All actuator endpoints exposed | `api/src/main/resources/application.properties` | `JAVA-003` `JAVA-025` |
+| 9 | `permitAll` on `/**` with a TODO | `api/src/main/java/shop/SecurityConfig.java` | `JAVA-004` `JAVA-007` `UNI-003` |
+| 10 | CORS `*` with credentials | `api/src/main/java/shop/SecurityConfig.java` | `SEC-005` `JAVA-009` |
+| 11 | SQL built by string concatenation | `api/src/main/java/shop/OrderController.java` | `SEC-004` `JAVA-013` |
 | 12 | Any order readable by ID, no owner check | `api/src/main/java/shop/OrderController.java` | `UNI-004` |
 | 13 | Database password in `application.properties` | `api/src/main/resources/application.properties` | `SEC-001` |
 | 14 | Firestore `if true` and Storage test-mode rules | `firebase/firestore.rules`, `firebase/storage.rules` | `FIRE-001` `FIRE-002` |
