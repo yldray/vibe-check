@@ -34,3 +34,24 @@
 **How to test:** Create a failed attempt after a successful one and run the job for that user.
 **Pass:** The token comes from the latest **successful** payment (or from a dedicated card table).
 **Fix:** Filter by the paid status, or keep tokens in their own table. See `PAY-017`.
+
+### PAYTR-013 · Amounts sent in the wrong unit
+**Severity:** P0
+**Why it breaks:** Each PayTR API uses its own unit, and AI reuses one helper for all of them. The iFrame `payment_amount` and the callback's `total_amount` are integer kuruş (34.56 TL → `3456`), while Direct API, saved-card and recurring `payment_amount`, `user_basket` prices and the refund's `return_amount` are TL with a dot (`9.99`). A recurring job that reuses the iFrame helper asks for 100× the price, a partial refund sent in kuruş returns 100× the intended amount, and `price * 100` sends `1998.9999999999998` for 19.99 TL instead of an integer.
+**How to test:** List every PayTR request builder and the unit of each amount field. Run test-mode payments for 19.99 and 1.15 TL through every path (iFrame, saved card, recurring, refund) and compare the amounts in the PayTR panel.
+**Pass:** Each field gets its documented unit, built from integer kuruş with explicit rounding.
+**Fix:** Keep money in kuruş and use one formatter per field: integer kuruş for the iFrame and the callback, two-decimal TL for Direct API, basket and refund; unit-test 19.99 and 1.15. See `PAY-008`.
+
+### PAYTR-014 · Callback written like a JSON API
+**Severity:** P0
+**Why it breaks:** PayTR posts the result as form fields (`merchant_oid`, `status`, `total_amount`, `hash`) and expects the plain text `OK`, with nothing before or after it. AI writes the handler like any API route: `await req.json()` throws on form data or `express.json()` leaves the body empty, so the hash never matches, and `res.json("OK")`, `NextResponse.json("OK")` or a FastAPI `return "OK"` send `"OK"` in quotes. PayTR can't reach localhost, so this handler often runs for the first time in production: orders stay unpaid, the sale shows as "Devam Ediyor" in the panel, and PayTR keeps retrying.
+**How to test:** Post a form-encoded callback with a hash computed from test credentials (`curl -i -d "merchant_oid=…&status=success&total_amount=…&hash=…"`): the body must be exactly `OK` (2 bytes, no quotes, BOM or HTML) and the order must change. After a test-mode payment on a public staging URL, the panel shows the sale as successful.
+**Pass:** Form fields are parsed and every notification (success, failed, repeat) gets a bare `OK` after the result is committed.
+**Fix:** Parse `application/x-www-form-urlencoded` (`request.formData()`, `express.urlencoded()`) and return plain text (`new Response("OK")`, `res.type("text").send("OK")`, `PlainTextResponse("OK")`). See `PAYTR-008`, `PAY-012`.
+
+### PAYTR-015 · `user_ip` is not the customer's IP
+**Severity:** P0
+**Why it breaks:** `user_ip` must be the customer's public IP at the time of the request; PayTR rejects local addresses with an invalid `paytr_token` error. Behind Nginx, Docker or a load balancer, AI reads `req.socket.remoteAddress` or `REMOTE_ADDR` and sends `127.0.0.1` or `172.x.x.x` for everyone, or hardcodes the developer's own IP from local testing.
+**How to test:** Read how the token builder gets `user_ip` and grep it for IP literals. Log `user_ip` for a request from a phone on mobile data and compare it with the phone's public IP.
+**Pass:** `user_ip` is each visitor's public IP, read through trusted proxy headers; no IP literals.
+**Fix:** Configure trusted proxies and read the client IP in one helper, as in `SEC-007`.
