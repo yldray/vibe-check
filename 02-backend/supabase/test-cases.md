@@ -1,9 +1,11 @@
 # Supabase — pre-launch test cases
 
-> 🌱 Seeded list. Contributions welcome.
-
-- [ ] `SUPA-007` **P0** Dashboard → Advisors → Security Advisor shows no errors (RLS disabled, security definer views, exposed auth data)
+- [ ] `SUPA-007` **P0** Dashboard → Advisors → Security Advisor shows no errors (RLS disabled, security definer views, exposed auth data), and no warnings for policies that are always true, policies that read user metadata, security definer functions anon or authenticated can execute, or public buckets that allow listing (`supabase db advisors --type security --level warn` runs the same lints from the CLI)
 - [ ] `SUPA-008` **P1** RLS tests exist for every user-data table: signed out, own rows and another user's rows (pgTAP via `supabase test db`)
 - [ ] `SUPA-009` **P1** Auth → URL configuration: Site URL and Redirect URLs point to production only; e-mail confirmation is on
 - [ ] `SUPA-010` **P1** Backups exist: the Free plan has no automatic backups, so either use a paid plan (Dashboard → Database → Backups) or schedule your own `pg_dump`
 - [ ] `SUPA-011` **P1** Production doesn't run on the Free plan: free projects are paused after 1 week of inactivity
+- [ ] `SUPA-022` **P0** Auth e-mails (confirmation, magic link, reset, invite) go through your own SMTP. The built-in sender only delivers to your organization's team members ("Email address not authorized") and a few e-mails per hour. Test: Authentication → Emails → SMTP Settings shows your provider; sign up with an address outside the team and receive the mail; Authentication → Rate Limits allows your expected sign-ups per hour (see `QA-009`)
+- [ ] `SUPA-023` **P0** Sign-up works for every sign-in method: each trigger on `auth.users` (usually `handle_new_user`) is `security definer` with `set search_path = ''` and schema-qualified names, every NOT NULL column gets a value for e-mail sign-up and for each OAuth provider, and unique columns can't collide. Test: list the triggers (`select t.tgname, p.oid::regprocedure, p.prosecdef, p.proconfig from pg_trigger t join pg_proc p on p.oid = t.tgfoid where t.tgrelid = 'auth.users'::regclass and not t.tgisinternal;`), then on staging sign up with e-mail and with each provider: no "Database error saving new user"
+- [ ] `SUPA-024` **P0** No secret key or `service_role` JWT is written into SQL: cron jobs, `net.http_post` calls and Database Webhooks read it from Vault (`vault.decrypted_secrets`). Test: `grep -rlE "eyJhbGciOi|sb_secret_" supabase/`; on the database, search `cron.job.command`, trigger definitions and `pg_proc.prosrc` for the same patterns (see `UNI-001`, `SUPA-003`)
+- [ ] `SUPA-025` **P1** The live schema matches `supabase/migrations`: policies, grants, functions, triggers and buckets made in the Dashboard were pulled into the repo, so auditing the repo audits production. Test: `supabase migration list` shows no remote-only versions and `supabase db diff --linked` prints no changes
