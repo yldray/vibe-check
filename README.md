@@ -107,13 +107,14 @@ Every stack folder has the same 4 files:
 | Stack | Status |
 |---|---|
 | Universal · Release | ✅ Complete |
-| React · Node · .NET · Expo · Android · iOS | ✅ Complete |
-| Angular · Vue · Java · Python · Supabase · Firebase · Flutter | 🌱 Seeded, needs contributors |
-| Payments: PayTR · iyzico · Stripe | 🌱 Seeded, needs contributors |
+| React · Angular · Vue · Plain JS | ✅ Complete |
+| Node · .NET · Java · Python · Supabase · Firebase | ✅ Complete |
+| Expo · Android · iOS · Flutter | ✅ Complete |
+| Payments: PayTR · iyzico · Stripe | ✅ Complete |
 
 ## 🤝 Contributing
 
-Seen an AI break the same thing twice? That's a test case. 7 of the 14 stacks are only seeded, so every real bug helps.
+Seen an AI break the same thing twice? That's a test case, and every real bug helps.
 
 **Easiest: let your agent do it.** After a report, say **"send feedback"**. The agent drafts issues for checks it had to invent (ID `—`), results you said were wrong, and bugs that slipped through. It strips project names, paths and code, shows you the drafts, and opens only the ones you approve. Each one becomes a check in the next release, and your next audit uses it.
 
