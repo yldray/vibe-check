@@ -27,7 +27,9 @@ React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebas
 2. Tell your agent: **"Run vibe check"**, or **"quick vibe check"** for P0s only (in our test on a real project: ~8 min instead of ~17 for the full audit)
 3. Fix every **P0** before you ship. A P0 marked `NEEDS REVIEW` counts too: confirm it yourself.
 
-No config. Your AI audits the code it wrote. Plugin updates: `/plugin marketplace update vibe-check` in the chat, or `claude plugin marketplace update vibe-check` in a terminal.
+No config. Your AI audits the code it wrote.
+
+**Keep the plugin current:** third-party plugins don't update on their own. Turn it on once: type `/plugin` in the chat → **Marketplaces** → `vibe-check` → **Enable auto-update**. New checks then arrive when a session starts. To update by hand: `/plugin marketplace update vibe-check` in the chat. (The drop-in file always fetches the latest checks.)
 
 ## 🧭 How it works
 
