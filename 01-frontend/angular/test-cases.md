@@ -1,7 +1,12 @@
 # Angular — pre-launch test cases
 
-> 🌱 Seeded list. Contributions welcome.
-
 - [ ] `NG-004` **P0** Production build with AOT succeeds
 - [ ] `NG-005` **P0** Route guards backed by API authorization
 - [ ] `NG-006` **P1** Lazy-loaded feature modules / routes
+- [ ] `NG-020` **P0** The framework packages are at least 22.2.0, 21.2.24 or 20.3.32 and `@angular/ssr` at least 22.0.0, 21.2.9 or 20.3.25. These carry the fixes for the XSS, SSRF and SSR data-leak advisories published through September 2026 (e.g. CVE-2025-66412, CVE-2026-27739, CVE-2026-50170). Test: `npm ls @angular/core @angular/ssr`; `npm audit --omit=dev`
+- [ ] `NG-021` **P1** Angular is on a supported major: v22, v21 (LTS until 2027-06) or v20 (LTS until 2026-11-28); v2 to v19 get no fixes. No AngularJS (`angular` 1.x, unsupported since January 2022; its XSS CVE-2026-11998 won't be fixed) and no `@nguniversal/*` (frozen at 16.2.0). Test: `npm ls @angular/core angular @nguniversal/express-engine`
+- [ ] `NG-022` **P1** The host serves `dist/<project>/browser` (the application builder's output since v17), not `dist/<project>`, and `<base href>` matches the deploy path (see `FE-018`). Test: read the Dockerfile `COPY`, nginx `root`, `firebase.json` `public` or `netlify.toml` `publish`; open a deep link on production: no 404 for scripts or styles
+- [ ] `NG-023` **P1** No template is compiled at runtime from strings or user data: no `@angular/compiler` import in app code and no `"aot": false`. AngularJS pages never print server-side user input inside `ng-app` (use `ng-non-bindable`). Test: `grep -rnE "@angular/compiler'|\"aot\": *false" src angular.json` (ignore spec files)
+- [ ] `NG-024` **P1** A failed request shows an error state: no `catchError(() => of([]))` or `EMPTY` turns errors into empty lists, and templates check `hasValue()` or `error()` before reading `resource.value()` / `httpResource.value()`, which throws after a failed request. Test: block the API in DevTools and open every page (see `UNI-007`, `FE-005`)
+- [ ] `NG-025` **P1** SSR and prerender code doesn't touch `window`, `document`, `localStorage` or `navigator` outside `afterNextRender`, `inject(DOCUMENT)` or browser-only providers. Test: `ng build` prerenders every route without "An error occurred while prerendering route"
+- [ ] `NG-026` **P1** `configurations.production` in `angular.json` isn't weakened: no `optimization: false`, `sourceMap` off or `hidden` (see `FE-012`), `outputHashing: "all"` kept, and budgets not raised to silence the build. Test: read the block; `grep -l sourceMappingURL dist/<project>/browser/*.js` prints nothing
