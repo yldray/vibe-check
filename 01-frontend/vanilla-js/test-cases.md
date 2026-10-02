@@ -1,6 +1,8 @@
 # Vanilla JS — pre-launch test cases
 
-> 🌱 Seeded list. Contributions welcome.
-
 - [ ] `JS-004` **P0** No secrets in scripts
 - [ ] `JS-005` **P1** Works in Safari
+- [ ] `JS-015` **P0** No script or stylesheet from `polyfill.io` / `polyfill.com` or the CDNs tied to the same owner (BootCDN, BootCSS, Staticfile): the polyfill.io domain changed owner in February 2024 and served malware to sites embedding it from June 2024. Test: `grep -rniE "polyfill\.(io|com)|bootcdn|bootcss|staticfile" --exclude-dir=node_modules .`
+- [ ] `JS-016` **P1** Third-party JS and CSS are pinned and checked: files from another origin name an exact version and carry `integrity` plus `crossorigin="anonymous"`, or are self-hosted (dynamic files such as font CSS and analytics tags are listed exceptions). Libraries loaded by `<script src>` or committed to the repo have no known vulnerability, which `npm audit` can't see; jQuery is 3.5.0 or later (CVE-2020-11023 is on CISA's Known Exploited list). Test: `grep -rnE '<(script|link)[^>]+(src|href)="(https?:)?//' --include=*.html . | grep -v "integrity="`; `npx retire --path .` (see `SEC-010`)
+- [ ] `JS-017` **P1** Amount and quantity fields never turn bad input into a number: `Number('')` is `0`, `parseFloat('12,50')` is `12`, a number input that can't parse its text has `value === ''`, and without `step="0.01"` (or `"any"`) 12.50 is invalid. Test: enter nothing, `12,50`, `1.234,56` and `12.50` in every price and quantity field, save, and read the stored value (see `UNI-016`, `QA-012`)
+- [ ] `JS-018` **P1** IDs that can exceed 2^53 − 1 (64-bit or snowflake IDs) reach the browser as strings: `JSON.parse` turns `9007199254740993` into `9007199254740992`, so edits and deletes hit the wrong record. Test: compare an ID read in the browser console with the database value; check the API serializer for `long` / `bigint` IDs sent as JSON numbers
