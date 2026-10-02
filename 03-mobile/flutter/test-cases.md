@@ -1,6 +1,12 @@
 # Flutter — pre-launch test cases
 
-> 🌱 Seeded list. Contributions welcome.
-
 - [ ] `FLT-004` **P0** Release builds tested on both platforms
 - [ ] `FLT-005` **P1** Text scaling and small screens
+- [ ] `FLT-019` **P0** No `flutter create` identity ships: `applicationId` and the iOS `PRODUCT_BUNDLE_IDENTIFIER` aren't `com.example.*` (the default; the Android id can never change after the first Play upload, see `AND-013`), `android:label` isn't the snake_case project name, and the launcher and store icons aren't the Flutter logo. Test: `grep -rn "com\.example" android/app/build.gradle* ios/Runner.xcodeproj/project.pbxproj`
+- [ ] `FLT-020` **P0** `targetSdk = flutter.targetSdkVersion` really meets `PLAY-001`: it is 36 from Flutter 3.35 and 35 in 3.32, so read the Flutter version the release job uses (`.fvmrc`, `flutter-version:` in CI) or the hardcoded number
+- [ ] `FLT-021` **P1** No `FutureBuilder` / `StreamBuilder` gets a future or stream created in `build()` (`future: api.fetchItems()`); create it in `initState` and keep it in a field. Test: log the fetch, then open the keyboard or rotate: one request per screen open
+- [ ] `FLT-022` **P1** Lists that can grow use `ListView.builder` / `ListView.separated` / `GridView.builder`, never `ListView(children:)` or a `Column` in a `SingleChildScrollView` filled with `.map()`. Test: 1,000 items scroll smoothly on a low-end Android
+- [ ] `FLT-023` **P1** Every scheme checked with `canLaunchUrl` has a `<queries>` entry in `AndroidManifest.xml` and an `LSApplicationQueriesSchemes` entry in `Info.plist`, or the code calls `launchUrl` directly and handles `false`. Test: tap the call, e-mail, website and map buttons on a release build on Android 11+
+- [ ] `FLT-024` **P1** If `app_links`, `uni_links` or another package handles deep links, Flutter's own handler is off (`flutter_deeplinking_enabled` = `false` in `AndroidManifest.xml`, `FlutterDeepLinkingEnabled` = `false` in `Info.plist`); Flutter turns it on by default since 3.27. Test: open a link with the app killed and in the background (see `MOB-007`)
+- [ ] `FLT-025` **P1** Release shrinking keeps what only Dart refers to by name: notification icons and sounds are listed in `android/app/src/main/res/raw/keep.xml` (`tools:keep`) and plugins that need ProGuard rules have them. Test: trigger every notification type on a release build (see `AND-004`)
+- [ ] `FLT-026` **P1** No `android:windowOptOutEdgeToEdgeEnforcement` in `android/app/src/main/res/values*/styles.xml` (Android 16 ignores it); bottom buttons and bars sit in a `SafeArea` or use `MediaQuery.paddingOf(context)`. Test: Android 16 with gesture and 3-button navigation (see `AND-012`)
