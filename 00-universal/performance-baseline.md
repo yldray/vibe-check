@@ -3,15 +3,19 @@
 - [ ] `PERF-001` **P1** API p95 response under 500 ms for main endpoints
 - [ ] `PERF-002` **P1** DB indexes on foreign keys and filtered / sorted columns
 - [ ] `PERF-003` **P1** No N+1 queries on list pages
-- [ ] `PERF-004` **P1** Images compressed and sized; lazy loaded below the fold
+- [ ] `PERF-004` **P1** Images are served at the size they're displayed (`srcset` / `sizes`), in WebP or AVIF, with explicit `width` and `height` (or `aspect-ratio`) so nothing shifts, and lazy loaded below the fold. Never lazy-load the hero image (see `PERF-016`)
 - [ ] `PERF-005` **P1** Load test at 10x expected traffic on the main flow (e.g. login → list → main action) with k6, JMeter or Artillery: ramp up over a few minutes, hold for 10. Pass: p95 stays within `PERF-001`, errors under 1%, memory doesn't keep climbing
 - [ ] `PERF-006` **P2** Caching for read-heavy data
 - [ ] `PERF-007` **P2** Bundle size reviewed
-- [ ] `PERF-008` **P1** Core Web Vitals are "good" at the 75th percentile: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (PageSpeed Insights or the `web-vitals` library on real users)
+- [ ] `PERF-008` **P1** Core Web Vitals are "good" at the 75th percentile: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (PageSpeed Insights or the `web-vitals` library on real users). Read the **Mobile** tab: it runs on a throttled phone, and a good desktop score often hides a mobile LCP several times slower
 - [ ] `PERF-009` **P1** The slow query log is on, and the slowest queries were checked with `EXPLAIN`: no full table scans on large tables
 - [ ] `PERF-010` **P1** Serverless or edge functions reach the database through a connection pooler, so traffic spikes don't hit "too many connections"
 - [ ] `PERF-011` **P1** Static assets have hashed file names (or a `?v=<commit>` stamp for hand-written and server-rendered pages) and long cache headers (`Cache-Control: public, max-age=31536000, immutable`); HTML is not cached for long; a replaced image or video gets a new URL. Test: deploy a CSS or image change and reload normally in a browser (and the mobile app) that visited before: the new version shows without a hard refresh
 - [ ] `PERF-012` **P1** Text responses (HTML, JS, CSS, JSON) are compressed with gzip or Brotli
 - [ ] `PERF-013` **P2** A 30-minute soak test shows flat memory and stable response times
 - [ ] `PERF-014` **P2** A performance budget runs in CI (bundle size limit or Lighthouse CI) and fails the build when it's exceeded
-- [ ] `PERF-015` **P2** Fonts don't block rendering (`font-display: swap`, preloaded) and third-party scripts load with `defer` or `async`
+- [ ] `PERF-015` **P2** Nothing blocks the first render: fonts use `font-display: swap` and are preloaded, third-party scripts load with `defer` or `async`, critical third-party origins get `<link rel="preconnect">`, and CSS in the `<head>` is small (critical CSS inline, the rest loaded later). Test: PageSpeed Insights shows no large "Render-blocking requests" saving
+- [ ] `PERF-016` **P1** The LCP element (usually the hero image or heading) is in the initial HTML, not lazy-loaded, and requested early: `fetchpriority="high"` or `<link rel="preload">`, not set from JavaScript, a CSS background or after a client-side fetch. Test: PageSpeed Insights "LCP request discovery" passes and "LCP breakdown" shows little load delay
+- [ ] `PERF-017` **P1** The home page stays light on first load: a few MB at most on mobile. Background and hero videos have a poster, `preload="none"` or `"metadata"`, are compressed, and decorative ones aren't loaded on small screens. Test: DevTools → Network, disable cache, reload on a mobile viewport and read the transferred total and request count
+- [ ] `PERF-018` **P2** No dead or legacy JavaScript: pages are code-split by route, heavy libraries load only where used, and the build targets modern browsers so no unneeded polyfills ship. Test: PageSpeed Insights shows no large "Reduce unused JavaScript" or "Legacy JavaScript" saving
+- [ ] `PERF-019` **P2** Response time is measured from where your users are, not only next to the server (a multi-region checker such as openstatus or WebPageTest). If distant regions are several times slower than the nearest, the fix is a CDN or edge cache for HTML and static files, not a faster server
