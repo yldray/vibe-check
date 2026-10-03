@@ -66,6 +66,13 @@ For an e-mail with 2+ rows, run login, one-time-code send and verify, social log
 **Pass:** 403 in every variant; nobody can grant a role equal to or above their own; hubs enforce the same rules as REST.
 **Fix:** Put the policy on each endpoint or route group with a deny-by-default fallback; a server-side table of which role may grant which; one authorization service shared by controllers and hubs; UI lists only mirror server permissions.
 
+### AUTH-012 · Refresh grace window that mints a token on every replay
+**Severity:** P1
+**Why it breaks:** So that two tabs can refresh at once, AI lets a just-rotated refresh token be used again for a few seconds, and every reuse issues another valid token in the same family. A stolen token replayed inside the window gets a working session, reuse detection never fires, and the real client's later rotations don't revoke the attacker's branch.
+**How to test:** Send the same refresh token twice inside the grace window and count the active tokens in its family; then rotate the real client's branch and try the other token.
+**Pass:** Both calls in the window get the same successor (or the second counts as reuse and revokes the family); a family never has more than one active token.
+**Fix:** Store the successor on the rotated token and return it for replays inside the window; any replay after the window revokes the whole family. See `SEC-009`.
+
 ## Before launch
 
 - [ ] `AUTH-007` **P1** E-mail (or phone) is verified before the account can pay, post or invite others

@@ -92,3 +92,17 @@
 **How to test:** View the page source and the RSC payload in the Network tab; look for fields the UI doesn't show.
 **Pass:** Only the fields the component needs.
 **Fix:** Map to small DTOs before passing props; `import 'server-only'` in modules that hold secrets or DB access.
+
+### REACT-025 · Route handler that only checks the cookie exists
+**Severity:** P0
+**Why it breaks:** AI guards a route handler or BFF endpoint with `if (!cookies().get('session')) return 401` and then serves data by the ID in the URL. Any non-empty cookie value passes, and with no ownership check anyone who sends `Cookie: session=x` can read any record.
+**How to test:** Call the route with a made-up cookie value, and with another user's real session and an ID that isn't theirs.
+**Pass:** 401 for the made-up value; 403 or 404 for the other user.
+**Fix:** Verify the token (`jwtVerify`), or fetch the data from your API with the bearer token so the API checks ownership. See `REACT-019`, `UNI-004`.
+
+### REACT-026 · Files read from `src/` at runtime are missing after deploy
+**Severity:** P1
+**Why it breaks:** AI reads certificates, fonts or templates in a route handler with `readFileSync(path.join(process.cwd(), 'src/…'))`. It works in `next dev`, but `output: 'standalone'`, Docker images that copy only the build output and serverless bundles don't contain `src/`. The route throws ENOENT (500) in production, often before the code that would have returned a clear 503.
+**How to test:** `grep -rn "process.cwd()" src/app src/lib`; run `next build` and look for each file under `.next/standalone` (or in the deploy image); call the route on the production build.
+**Pass:** Every file read at runtime is in the build output, or imported.
+**Fix:** `outputFileTracingIncludes` in `next.config`, or import the file as a module; read optional files only after the feature's config check.

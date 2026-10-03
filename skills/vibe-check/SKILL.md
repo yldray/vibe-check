@@ -21,6 +21,7 @@ If the user says **"quick vibe check"**, run **Quick mode** instead of Steps 2�
 5. Secrets: `gitleaks detect --redact` if installed. Otherwise run the commands below once. They find literal values assigned to secret-like names (and known key formats) in the files and in git history, and print only file names, counts and commits, never values. They skip the vibe-check agent files, which contain these patterns. Don't open the matches; sort the files instead:
    - settings code and config files (`config.py`, `settings.py`, `config.js`, `appsettings*.json`, `application.*`, `.env`), scripts, migrations and docs → one `FAIL` row per file, also when the match is only in history
    - tests, examples (`*.example`, `*.example.*`, `.env.example`) and data files → one `NEEDS REVIEW` row
+   - dev-only files (`*.Development.*`, `*.local.*`, `docker-compose*`, the `services:` of a CI workflow) where `git grep -lE 'localhost|127\.0\.0\.1|host=postgres|host=db'` also lists the file → one `NEEDS REVIEW` row ("dev-only value for a local database") instead of `FAIL`; a dev-only file that points anywhere else stays `FAIL`
    - other source files (often key names, not secrets) → one `NEEDS REVIEW` row
 
 ```sh

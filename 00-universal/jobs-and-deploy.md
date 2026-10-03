@@ -85,7 +85,7 @@ AI writes these by copying snippets. Check every file in `.github/workflows/`.
 - [ ] `OPS-010` **P0** No `pull_request_target` workflow checks out or runs code from the pull request: a fork's PR would run with your secrets and a write token
 - [ ] `OPS-011` **P0** No `${{ github.event.* }}` (PR title, issue body, branch name, commit message), `${{ inputs.* }}` (including "type deploy to confirm" inputs), `${{ steps.*.outputs.* }}` or `${{ needs.* }}` value is written straight into a `run:` script; pass it through `env:`, quote the variable and validate its format (`grep -n '${{' .github/workflows/*.yml` inside `run:` blocks)
 - [ ] `OPS-012` **P1** Every workflow sets `permissions:` to the least it needs (e.g. `contents: read`), never `write-all`
-- [ ] `OPS-013` **P2** Third-party actions are pinned to a full commit SHA, not a moving tag like `@v1` or `@main`
+- [ ] `OPS-013` **P2** Third-party actions are pinned to a full commit SHA, not a moving tag like `@v1` or `@main`; tools a workflow downloads with `curl` or `wget` are checked against a pinned SHA-256 before they run
 - [ ] `OPS-014` **P2** Every job has `timeout-minutes`, so a stuck job doesn't burn runner minutes for hours
 
 ## Found in production
