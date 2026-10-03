@@ -50,7 +50,8 @@ What AI-built UIs get wrong, and what to click through by hand before launch.
 **Severity:** P2
 **Why it breaks:** AI uses plain text inputs for email, phone, numbers and one-time codes.
 **How to test:** Fill every form on a real phone.
-**Pass:** The right keyboard opens and autofill works (email, phone, one-time code, password).
+On split one-time-code boxes, accept the iOS code suggestion and paste a code.
+**Pass:** The right keyboard opens and autofill works (email, phone, one-time code, password); all code digits land (`maxLength={1}` per box truncates autofill and paste), and the first box has `autoFocus` and `textContentType="oneTimeCode"`.
 **Fix:** Web: set `type`, `inputmode` and `autocomplete`. React Native: set `keyboardType` and `autoComplete` / `textContentType`.
 
 ### QA-017 · File imports that run twice, guess or drop rows
@@ -59,6 +60,13 @@ What AI-built UIs get wrong, and what to click through by hand before launch.
 **How to test:** Import the same file twice (also renamed); a merged multi-document file; an unsupported type; a workbook with several sheets; a column with one value in every row; missing units and sentinel values; an export re-imported. Compare rows in vs out.
 **Pass:** Every input row is imported or listed as skipped with a reason; duplicates are refused by business key; unsupported or suspicious files go to a rejected folder with an alert; the summary shows read / imported / skipped counts.
 **Fix:** Content hash plus a unique business key; a rejected folder with a reason; row-level sanity rules; no default units or fuzzy auto-match; round-trip-safe export columns; regression tests with real anonymized files.
+
+### QA-018 · Client timeout shown as failure while the server finished
+**Severity:** P1
+**Why it breaks:** Slow third-party senders (SMS or e-mail one-time codes) take longer than the client timeout. AI shows the same "unexpected error" for a timeout as for a 500: the code arrives, but the user is stuck on an error screen with nowhere to type it, or retries into a rate limit.
+**How to test:** Delay the send endpoint past the client timeout with a proxy while the server still sends.
+**Pass:** A timeout on a non-idempotent send moves on to the next step with "this may take a moment"; only a real server error asks to retry.
+**Fix:** Handle timeout errors (`ECONNABORTED`, `AbortError`) separately from HTTP errors.
 
 ## Manual QA before launch
 
