@@ -211,3 +211,31 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 **How to test:** Open a paid video URL logged out, in another browser, a day later; request a segment with the query string removed.
 **Pass:** Both are refused after the signature window.
 **Fix:** Signed cookies, or the signature in the path prefix so segments inherit it; round the expiry (e.g. to the hour) to keep CDN caching; build every media URL in one function.
+
+### UNI-031 · Uploaded photos published with their GPS location
+**Severity:** P1
+**Why it breaks:** AI validates an upload by magic bytes, type and size, then serves the original file. Phone photos carry EXIF: GPS coordinates, device model and capture time. A listing photo or an avatar taken at home tells every visitor where the user lives.
+**How to test:** Upload a photo straight from a phone with location on, download it from the public URL and run `exiftool -gps:all <file>`. Grep the upload pipeline for a re-encode or strip step (`sharp(`, `ImageSharp`, `SkiaSharp`, `Pillow`, `exif`, `strip`).
+**Pass:** The public copy has no GPS or device tags, and orientation is baked into the pixels.
+**Fix:** Re-encode, or strip all metadata after applying the orientation, in the step that makes the object public; keep the original private if you need it at all. See `SEC-008`.
+
+### UNI-032 · A signed upload URL can replace the file after it was checked
+**Severity:** P1
+**Why it breaks:** In a direct-to-storage flow the server signs a PUT URL (often valid 15–60 minutes), the client uploads, and a confirm endpoint inspects the object (type, dimensions, virus scan) and marks it active. The signature is still valid, so the client PUTs again and swaps the checked file for any bytes of the signed type and size. The record says "validated"; the stored content isn't.
+**How to test:** Upload and confirm a file, PUT different bytes to the same signed URL, then fetch the public URL.
+**Pass:** The second PUT fails, or the public URL still serves the checked bytes.
+**Fix:** On confirm, copy the object to a final key that no URL was ever signed for and serve only that key; or use a conditional write (`If-None-Match: *`) where the store supports it and compare the ETag at confirm. See `SEC-008`.
+
+### UNI-033 · Stand-in services let production start without a real provider
+**Severity:** P0
+**Why it breaks:** To keep development running without SMTP or object storage, AI registers a stand-in (`Unconfigured…`, `Null…`, `NoOp…`, `Console…`, or a class that throws `NotImplementedException`) whenever the real settings are missing, not only in development. Production starts, the health check is green and the deploy succeeds; the first login code or upload returns 500. The no-op variant is worse: e-mails "send" and nothing arrives.
+**How to test:** Grep for `class (Unconfigured|NotConfigured|Null|NoOp|Fake|Console)[A-Za-z]*(Sender|Mailer|Storage|Client|Gateway)` and `NotImplementedException`, and check that each registration sits inside the development branch. Start the production build without the provider's settings.
+**Pass:** Outside development the process exits at startup and names the missing provider.
+**Fix:** Pick implementations by environment, and fail startup in every other environment when a required provider isn't configured. See `ENV-005`, `OPS-017`, `UNI-006`.
+
+### UNI-034 · Retina asset names rewritten into e-mail addresses
+**Severity:** P1
+**Why it breaks:** `icon@2x.png` and `logo@3x.png` look like e-mail addresses to PII and secret scrubbers (AI output filters, DLP proxies, "redact" commit hooks). The file is renamed, or the string that loads it is replaced, with a fake address such as `someone@example.org`. The build passes because the file exists under its new name, but wallet passes, iOS asset catalogs and React Native's `@2x`/`@3x` lookup find density variants by suffix, so high-resolution icons silently vanish or the pass is rejected.
+**How to test:** `git ls-files | grep -E '@[A-Za-z0-9-]+\.[a-z]{2,}$'` (file names that end in a domain) and `git grep -nE "['\"][a-z0-9._-]+@example\.(com|org|net)['\"]"`; check that every expected `@2x` / `@3x` file exists.
+**Pass:** No asset path looks like an e-mail address, and every density variant is present under its `@Nx` name.
+**Fix:** Rename the files back, fix the strings that load them, and exclude `@[0-9]+x\.(png|jpe?g|webp|pdf)` from the scrubber.

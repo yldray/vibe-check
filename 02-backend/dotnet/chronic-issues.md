@@ -209,3 +209,24 @@
 **How to test:** Grep `TryAddWithoutValidation(` and check every return value; capture one real outgoing request and compare its headers with the code.
 **Pass:** Every return value is checked and each header is in the right collection.
 **Fix:** Request headers on `HttpRequestMessage.Headers`, content headers on `Content.Headers`; throw when an add returns false.
+
+### DOTNET-042 · File-permission errors reported as "session expired"
+**Severity:** P1
+**Why it breaks:** AI maps `UnauthorizedAccessException` to 401 in the global exception handler and throws it for "not logged in". .NET throws the same type for file-system and ACL denials (a local storage folder, temp files, key files). An infrastructure fault becomes a 401, the client logs the user out, and the real error is never logged as a 5xx.
+**How to test:** `grep -rn "UnauthorizedAccessException" --include=*.cs` in exception mapping and auth code. On staging, make the storage folder read-only and upload a file.
+**Pass:** Auth failures use the app's own exception type; the permission error is a logged 500.
+**Fix:** A dedicated `UnauthenticatedException` for missing identity; let the BCL type fall through to 500. See `DOTNET-007`.
+
+### DOTNET-043 · Column limits only in the database, so bad input is a 500
+**Severity:** P1
+**Why it breaks:** The EF configuration has `HasMaxLength`, `HasCheckConstraint` or a unique index, but the validator of a command that writes the column lacks the matching rule, and the global handler doesn't map `DbUpdateException`. A note one character too long, an end before its start, or a duplicate name returns 500 "unexpected error", fills error tracking and trips alerts.
+**How to test:** For every `HasMaxLength`, `HasCheckConstraint` and `IsUnique` in the configurations, find the rule in each command validator that writes that column; send the boundary values.
+**Pass:** 400 or 409 with a field message, never 500.
+**Fix:** A validator per write command that mirrors every constraint. As a last resort, map PostgreSQL `22001`/`23514` to 400 and `23505` to 409 (SQL Server `2628`/`547` and `2627`/`2601`) in the handler, still logged. See `UNI-005`, `BE-002`.
+
+### DOTNET-044 · Filtered unique index tied to an enum string
+**Severity:** P1
+**Why it breaks:** Enums are stored as strings (`HasConversion<string>()`) and a filtered unique index such as `HasFilter("\"Status\" = 'Open'")` stops double bookings. Renaming or recasing the enum member changes the stored values but not the raw filter text, and EF generates no migration diff for it. The index now covers no rows and duplicates come back silently.
+**How to test:** `grep -rnE "HasFilter\(.*'[A-Za-z]+'" --include=*.cs`; check each literal equals a current enum value exactly as the converter stores it; insert a duplicate in an integration test.
+**Pass:** Every literal matches, and a test proves the duplicate is refused.
+**Fix:** Build the filter from `nameof(Status.Open)` with the converter's casing, add a CHECK constraint listing the allowed values, and keep the duplicate-insert test.
