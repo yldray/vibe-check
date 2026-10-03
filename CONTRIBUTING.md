@@ -17,7 +17,8 @@ Thanks for helping vibe coders ship safer code.
 5. Store and legal rules: link the official source.
 6. Agent files: edit only `agents/CLAUDE.md`, then run `sh scripts/sync-agents.sh`. It copies the file to `AGENTS.md` and `.cursorrules` and builds the plugin skill `skills/vibe-check/SKILL.md`. CI rejects PRs where they differ.
    Added or changed a P0? Run `python3 scripts/build-quick.py` to rebuild `quick/p0.md`, and add it to `quick/manual.txt` if it needs a device, a store console or production. CI checks both.
-7. **Describe the pattern, not the project.** This repo is public. In issues, PRs, commits and test cases, never include names, URLs, file paths, issue numbers, report excerpts or secrets from private or client projects, even masked. "A Next.js app that puts a private key in `NEXT_PUBLIC_`" is fine; the app's name is not.
+7. **Update the README in the same change** when you add a folder or stack, move a stack's Coverage status, or change install steps or features.
+8. **Describe the pattern, not the project.** This repo is public. In issues, PRs, commits and test cases, never include names, URLs, file paths, issue numbers, report excerpts or secrets from private or client projects, even masked. "A Next.js app that puts a private key in `NEXT_PUBLIC_`" is fine; the app's name is not.
 
 ## Adding a new stack
 
