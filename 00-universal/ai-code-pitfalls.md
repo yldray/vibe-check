@@ -130,8 +130,8 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 
 ### UNI-019 · Deleted and deactivated records still show up
 **Severity:** P1
-**Why it breaks:** AI adds `IsDeleted`, `IsActive` or `deleted_at` and filters on it in the query it is editing, not in joined tables or sibling queries. A deleted account still counts in the "e-mail exists?" check, so the user can't sign up again; a deactivated user keeps receiving report e-mails; inactive prices still show; a list and the action behind its button use different filters. "Suspended" and "deleted" are also mixed up in business rules.
-**How to test:** Soft-delete or deactivate a record and a user, then run every list, search, exists check, export, report e-mail, login and signup. Grep queries on the table for the flag on every join.
+**Why it breaks:** AI adds `IsDeleted`, `IsActive` or `deleted_at` and filters on it in the query it is editing, not in joined tables or sibling queries. A deleted account still counts in the "e-mail exists?" check, so the user can't sign up again; a deactivated user keeps receiving report e-mails; inactive prices still show; a list and the action behind its button use different filters. "Suspended" and "deleted" are also mixed up in business rules. An older code path that deleted accounts without clearing the active flag lets deleted accounts log in when auth queries filter on "active" alone.
+**How to test:** Soft-delete or deactivate a record and a user, then run every list, search, exists check, export, report e-mail, login and signup. Grep queries on the table for the flag on every join, and every auth query (login, send and verify one-time code, reset, social sign-in, "exists" check) for the deleted flag.
 **Pass:** Inactive data is invisible everywhere except admin and audit views; deactivated users get nothing and can't log in; "active" is computed the same way everywhere.
 **Fix:** A global query filter (e.g. EF `HasQueryFilter`) or a view; one shared predicate for list and action; separate flags for suspended and deleted.
 
@@ -183,3 +183,31 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 **How to test:** Save 23:30 local time, reload; filter a report "from 1st to 31st" and check that the 31st is included.
 **Pass:** Times round-trip unchanged; date ranges include the whole last day.
 **Fix:** Send zones explicitly (ISO with offset) or treat zone-less values as strings; build ranges as `< next day`. See `OPS-008`.
+
+### UNI-027 · Signed over different values than the ones sent
+**Severity:** P1
+**Why it breaks:** AI builds the hash or signature input from one variable and sends a different, later-computed value (client IP, amount, header, timestamp). The provider rejects every request, or worse, accepts a value the signature never covered.
+**How to test:** For each signed outgoing request (payment tokens, SigV4, HMAC APIs), log the signed input next to the final request for one call and compare field by field.
+**Pass:** Every signed field equals the value sent.
+**Fix:** Compute the final values once and sign exactly those, in one function that returns both payload and signature.
+
+### UNI-028 · An endpoint answers "OK" when it couldn't tell who called
+**Severity:** P1
+**Why it breaks:** The endpoint reads the user from a different place than its clients send it (a JWT claim while the site sends a custom token header). The user id is empty, the code returns 200 "to be safe" and writes nothing. The metric looks quiet, not broken, for months.
+**How to test:** Call every write endpoint exactly as the real client does (copy the request from the browser or app) and read the row back; grep for early success returns when the user id is 0 or null.
+**Pass:** An unidentified call gets 401; the real client's call writes a row.
+**Fix:** One shared helper resolves the caller everywhere; a missing identity is an error, never a no-op. See `UNI-013`, `UNI-015`.
+
+### UNI-029 · Silent fallback to a worse path
+**Severity:** P2
+**Why it breaks:** When a dependency fails (search cluster, cache, recommender), AI falls back to something simpler (SQL `LIKE`, defaults) and logs at debug level or not at all. Some clients report failure through a result flag rather than an exception, so the catch never runs. Users get worse results (accent-sensitive search finds nothing) and nobody is alerted.
+**How to test:** Block the dependency or give it wrong credentials and look for a warning or alert; grep for fallbacks and for ping/health results (`IsValid`, `ok`) that are never read.
+**Pass:** The fallback logs a rate-limited warning with the reason, and a health check or metric shows the primary path is down.
+**Fix:** Check result flags as well as exceptions; warn at most once per N minutes; expose a "degraded" state. See `UNI-007`.
+
+### UNI-030 · Paid media URLs that never expire, or signed only at the playlist
+**Severity:** P1
+**Why it breaks:** The backend gives the video URL only to entitled users, but the URL is permanent, so anyone it is shared with can watch. When AI adds signing, it puts `?sig=` on the HLS manifest; the player resolves segment URLs relative to the manifest and drops the query string, so segments stay open.
+**How to test:** Open a paid video URL logged out, in another browser, a day later; request a segment with the query string removed.
+**Pass:** Both are refused after the signature window.
+**Fix:** Signed cookies, or the signature in the path prefix so segments inherit it; round the expiry (e.g. to the hour) to keep CDN caching; build every media URL in one function.

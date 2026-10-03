@@ -15,10 +15,11 @@
 - [ ] `PLAY-014` Subscriptions: the paywall discloses the offer terms, price, billing frequency and automatic renewal; a free trial says when it turns paid, for how much and how to cancel ([Subscriptions policy](https://support.google.com/googleplay/android-developer/answer/9900533))
 - [ ] `PLAY-015` Subscriptions: the paywall has a clearly visible dismiss button; Play lists a missing or hidden one as a policy violation ([Subscriptions policy](https://support.google.com/googleplay/android-developer/answer/9900533))
 - [ ] `PLAY-016` No button, link or call to action to pay outside Google Play billing on any account or plan type, including the review test account ([Payments policy](https://support.google.com/googleplay/android-developer/answer/9858738))
-- [ ] `PLAY-017` Every foreground service type in the manifest is used and declared in Play Console; a new type in an update needs a new declaration ([foreground service requirements](https://support.google.com/googleplay/android-developer/answer/13392821))
+- [ ] `PLAY-017` Every foreground service type in the manifest is used and declared in Play Console; a new type in an update needs a new declaration ([foreground service requirements](https://support.google.com/googleplay/android-developer/answer/13392821)). The declaration asks for a video of the feature in use; record it before release (`adb shell screenrecord`) and pick the category that matches the real flow
 
 ## P1
 - [ ] `PLAY-010` Store listing: screenshots for phone (and tablet if supported), feature graphic, short + full description
 - [ ] `PLAY-011` Pre-launch report reviewed
 - [ ] `PLAY-012` Staged rollout (start at 10–20%)
 - [ ] `PLAY-013` Crash rate and ANR rate monitored in Android vitals
+- [ ] `PLAY-018` Real-time developer notifications point to a Pub/Sub topic with an authenticated push to your server, and Play Console's "Send test notification" reaches it and is logged (see `PAY-024`)
