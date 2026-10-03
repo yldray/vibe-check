@@ -188,3 +188,24 @@
 **How to test:** Search the `dotnet ef migrations add` output for "No store type was specified for the decimal property"; grep entities for `decimal` properties without `[Precision]`, `HasPrecision` or `HasColumnType`, and migrations for `decimal(18,2)`. Save the most precise real value each column must hold and read it back.
 **Pass:** Every decimal column has a chosen precision and scale; real values round-trip unchanged.
 **Fix:** `[Precision(18, 4)]` on the property, or `HasPrecision(18, 4)` in `OnModelCreating`, plus a migration. See `UNI-025`, `PAY-008`.
+
+### DOTNET-039 · Request fields the client sends are silently dropped
+**Severity:** P1
+**Why it breaks:** System.Text.Json ignores JSON properties the bound type doesn't have. The admin form sends a custom code and a usage limit, the DTO has neither, and the server generates a random code with a limit of 1 and returns 200. The same happens when a backend port renames or drops DTO fields that old clients still send.
+**How to test:** For each form or client call, compare the JSON sent with the DTO's properties; submit and read the saved row back.
+**Pass:** Every sent field is bound, or the request is rejected; unknown members fail in development and test.
+**Fix:** `JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow` (.NET 8+) or the attribute on DTOs; a round-trip test per form. See `UNI-013`, `OPS-018`.
+
+### DOTNET-040 · Inserts fail on SQL Server tables with triggers
+**Severity:** P0
+**Why it breaks:** EF Core 7+ reads generated values back with `OUTPUT`, and SQL Server refuses `OUTPUT` without `INTO` on a table that has a trigger. Someone adds a trigger in the database outside migrations; from then on every `SaveChanges` on that table throws. If a catch swallows it, the data simply stops being recorded.
+**How to test:** List production triggers (`SELECT OBJECT_NAME(parent_id) FROM sys.triggers`) and check each entity is configured with `HasTrigger`; count rows per day for the last 30 days on every table the app writes.
+**Pass:** Every table with a trigger has `ToTable(t => t.HasTrigger("…"))`; no daily count suddenly drops to zero.
+**Fix:** Declare triggers in the model and add them only through migrations; log and alert, never swallow. See `UNI-007`.
+
+### DOTNET-041 · Headers that are silently never added
+**Severity:** P1
+**Why it breaks:** `TryAddWithoutValidation` returns `false` instead of throwing when the header belongs to the other collection (`Cache-Control` on content headers, for example). The header is never sent but is part of the signature, so signed uploads (S3 SigV4 and similar) fail with "SignatureDoesNotMatch", or the header quietly doesn't apply.
+**How to test:** Grep `TryAddWithoutValidation(` and check every return value; capture one real outgoing request and compare its headers with the code.
+**Pass:** Every return value is checked and each header is in the right collection.
+**Fix:** Request headers on `HttpRequestMessage.Headers`, content headers on `Content.Headers`; throw when an add returns false.

@@ -69,3 +69,10 @@
 **How to test:** Build with complete concurrency checking; search for `@unchecked Sendable` and `nonisolated(unsafe)`.
 **Pass:** No warnings, and every unchecked annotation has a written reason.
 **Fix:** Isolate shared state with actors or `@MainActor`.
+
+### IOS-017 · Offline HLS downloads marked complete when they failed
+**Severity:** P1
+**Why it breaks:** AI decides success in `urlSession(_:assetDownloadTask:didFinishDownloadingTo:)`, which is also called after cancel and error, so half-downloaded `.movpkg` packages are marked "downloaded". Deletes aren't verified, and packages from a download killed mid-way are never linked to a record, so disk use only grows. AI also tries to fetch HLS segments by hand and play them from disk, which iOS doesn't support.
+**How to test:** Cancel a download at 30%; kill the app mid-download and relaunch; delete a download and check the app container size (`xcrun simctl get_app_container`).
+**Pass:** Only `didCompleteWithError(nil)` marks completion; deletes remove the package and are verified; orphaned packages are swept at launch.
+**Fix:** `AVAssetDownloadTask` with the completion decision in `didCompleteWithError`, plus a startup sweep.
