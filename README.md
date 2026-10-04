@@ -31,6 +31,8 @@ No config. Your AI audits the code it wrote.
 
 **Keep the plugin current:** third-party plugins don't update on their own. Turn it on once: type `/plugin` in the chat → **Marketplaces** → `vibe-check` → **Enable auto-update**. New checks then arrive when a session starts. To update by hand: `/plugin marketplace update vibe-check` in the chat. (The drop-in file always fetches the latest checks.)
 
+The repository also includes a Cursor plugin manifest at [`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json), alongside the shared skill in [`skills/vibe-check/`](skills/vibe-check/).
+
 ## 🧭 How it works
 
 <img src="assets/how-it-works.png" alt="Three steps: drop in one file and say Run vibe check; the agent detects your stack, fetches the matching checks and reads your code; you get a report with ID, status and file:line, and nothing changes until you approve" width="100%">
