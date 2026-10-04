@@ -63,6 +63,13 @@
 **Pass:** Lint is clean; the screen renders from the loading state.
 **Fix:** All hooks above the first conditional return.
 
+### REACT-027 · Derived state corrected in useEffect
+**Severity:** P1
+**Why it breaks:** AI keeps a value that depends on other state in its own state (the day of a date picker, a page number, a selected index) and fixes it in `useEffect` with `setState` when it goes out of range. The render before the effect uses the invalid value: moving from January 31 to February shows, emits or submits February 31, which `new Date` turns into March 3. Then a second render follows. The `react-hooks/set-state-in-effect` lint rule flags the pattern, so a CI lint step fails.
+**How to test:** Run ESLint with `react-hooks/set-state-in-effect` on. In each date or range picker, pick the 31st, switch to a 30-day month and to February, and pick February 29, then switch to a non-leap year. Log the value passed to `onChange` or the form on every render.
+**Pass:** Lint is clean; no out-of-range value is rendered, emitted or submitted.
+**Fix:** Keep the raw state and derive the corrected value during render (`const day = Math.min(raw.day, daysInMonth)`), or correct it in the event handler that changes the month.
+
 ## Next.js server (Server Actions, route handlers, proxy / middleware)
 
 ### REACT-018 · Server Action without auth
