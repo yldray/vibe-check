@@ -158,8 +158,8 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 
 ### UNI-023 · Test and internal accounts counted as customers
 **Severity:** P1
-**Why it breaks:** Each new report, payout or metric is written from scratch and forgets to exclude test users, staff accounts and deleted rows. Revenue, payouts to partners and conversion numbers are off, and the exclusion gets re-added report by report.
-**How to test:** Make a test-user purchase and a deleted-user purchase; check every report and payout.
+**Why it breaks:** Each new report, payout or metric is written from scratch and forgets to exclude test users, staff accounts and deleted rows. Revenue, payouts to partners and conversion numbers are off, and the exclusion gets re-added report by report. Test accounts, some with paid access granted, also stay in the production database.
+**How to test:** Make a test-user purchase and a deleted-user purchase; check every report and payout. Query production users for test domains and names, and for access granted with no payment.
 **Pass:** Neither appears; the exclusion lives in one shared query, view or helper.
 **Fix:** A single "real customers" filter used by every report; see `UNI-011`.
 
@@ -253,3 +253,38 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 **How to test:** For one period, compare the total and each partner's figure on every screen and export; check that the shares add up to 100%; add an unattributable row and see whether anyone's share changes; recalculate a paid month after a code change.
 **Pass:** Every screen shows the same numbers from one shared calculation; numerator and denominator use the same row filter; paid periods are frozen and changes apply from a stated date.
 **Fix:** One function or database view for the calculation, used everywhere; exclude unattributable rows from both sides; store each paid period's figures instead of recomputing them. See `UNI-023`, `UNI-025`.
+
+### UNI-037 · Reports that drop records with a missing link
+**Severity:** P1
+**Why it breaks:** AI joins every table with an inner join. A record whose optional link is empty (no supplier account yet, no branch, a deleted category) silently disappears from the report, so a list shows fewer people or documents than exist and nobody notices.
+**How to test:** Create a record with each optional link empty; compare the report's count with a plain count of the source table.
+**Pass:** The counts match, and unlinked records appear in an "unassigned" group.
+**Fix:** Left joins for optional links, an explicit "unassigned" bucket, and a reconciliation count at the bottom of the report. See `UNI-023`.
+
+### UNI-038 · Queued items never re-checked after the data is fixed
+**Severity:** P1
+**Why it breaks:** An automatic match or approval runs once, when the item arrives. It fails because a price, mapping or master record is wrong; someone fixes the data, but the items already waiting keep their old result and staff approve them one by one.
+**How to test:** Queue an item that fails on wrong master data, fix the data, and watch the item.
+**Pass:** Waiting items are re-evaluated (automatically, or with one "re-check" action) and finished items stay unchanged.
+**Fix:** Re-run the decision for pending items when the data they depend on changes, or on a schedule; keep the decision a pure function of its inputs so it can be re-run safely.
+
+### UNI-039 · Items sent to manual review with no reason
+**Severity:** P1
+**Why it breaks:** The automation stores only "needs review". Users see a high match score next to an item that wasn't approved, ask why again and again, and nobody can tell which rule stopped it.
+**How to test:** Open ten items in the manual queue.
+**Pass:** Each shows a stored reason in plain words (price mismatch, unknown supplier, duplicate, below threshold) and the value that decided.
+**Fix:** Record a reason code and the deciding values with every non-automatic decision; show them in the queue and allow filtering by reason.
+
+### UNI-040 · Items lost between stages
+**Severity:** P1
+**Why it breaks:** A pipeline (upload, read, match, approve, export) is built as separate steps, each looking only at its own table. Items that fail between two steps vanish: users upload a batch and see fewer items than they sent, or approved items never reach the export.
+**How to test:** For one day, count the items leaving each stage and entering the next.
+**Pass:** Out of stage A = into stage B + listed exclusions with reasons, and each upload shows those counts.
+**Fix:** One status per item with allowed transitions, a daily reconciliation count with an alert, and a per-upload summary (received, read, grouped, duplicate, rejected). See `QA-017`, `UNI-013`.
+
+### UNI-041 · Prices that change on a date
+**Severity:** P1
+**Why it breaks:** AI keeps one price per item. When a contract price changes after a date, the current price is applied to past services; when the new price is added as a second active row, the code takes the first or the highest one.
+**How to test:** Price a service before and after the change date; add two active rows for the same item.
+**Pass:** Each service uses the price valid on its date, and overlapping active prices are refused when saved.
+**Fix:** Valid-from and valid-to on every price row, a check against overlapping periods, and lookups by service date. See `INV-006`.

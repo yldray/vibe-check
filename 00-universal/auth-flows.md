@@ -73,7 +73,22 @@ For an e-mail with 2+ rows, run login, one-time-code send and verify, social log
 **Pass:** Both calls in the window get the same successor (or the second counts as reuse and revokes the family); a family never has more than one active token.
 **Fix:** Store the successor on the rotated token and return it for replays inside the window; any replay after the window revokes the whole family. See `SEC-009`.
 
+### AUTH-013 · A removed role keeps working until the user logs out
+**Severity:** P1
+**Why it breaks:** The role sits inside a long-lived access token, and removing it in the admin panel revokes nothing. A demoted admin keeps admin rights until the token expires or they log out, and the panel tells admins to "ask the user to log in again".
+**How to test:** Log in as an admin in one browser, remove the role in another, then call an admin endpoint at once and again after a token refresh.
+**Pass:** Refused within seconds.
+**Fix:** Check the role on the server for sensitive actions, or revoke the user's refresh tokens (bump a token version) on every role change and keep access tokens short. See `AUTH-003`.
+
+### AUTH-014 · Public pages that send visitors to the login page
+**Severity:** P1
+**Why it breaks:** A global HTTP interceptor redirects to login on any 401. On a public page or a free preview, a side request (saving progress, loading captions, fetching a profile) returns 401 and throws the visitor out mid-way; or the root URL itself is the login page, so a shared link looks as if sign-up is required.
+**How to test:** In a private window, open the root URL and every marketing link; play a free preview to the end, seek and turn on captions; watch the network tab for 401s.
+**Pass:** Visitors stay on public pages; requests that need a user are skipped for visitors, and only an action that needs an account asks them to log in.
+**Fix:** Redirect on 401 only for requests the user started on a protected page; don't call user endpoints for anonymous visitors; make the root URL the public home.
+
 ## Before launch
 
 - [ ] `AUTH-007` **P1** E-mail (or phone) is verified before the account can pay, post or invite others
 - [ ] `AUTH-008` **P1** OAuth sign-in checks the `state` parameter, and only your production redirect URIs are registered with the provider
+- [ ] `AUTH-015` **P2** The expiry a code or link states in the e-mail, SMS or screen ("valid for 5 minutes") comes from the same setting the server enforces

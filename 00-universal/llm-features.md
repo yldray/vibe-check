@@ -27,7 +27,7 @@ Only if the app calls a language model. Provider keys in the client are covered 
 **Severity:** P0
 **Why it breaks:** AI lets the model call tools (refund, delete, change plan, send e-mail) and runs whatever it asks with the app's own permissions. A model can be talked into anything; a rules engine can't.
 **How to test:** Through the chat, ask for an action on another user's data, or a refund or limit change you aren't entitled to.
-**Pass:** The server checks the current user's rights on every tool call; irreversible actions need the user's confirmation.
+**Pass:** The server checks the current user's rights on every tool call; irreversible actions need the user's confirmation, and a question about how to do something never creates a ticket, appointment or callback by itself.
 **Fix:** Tools run with the user's permissions and allow-listed parameters. Limits, refunds and account changes are decided by code, not by the model.
 
 ### LLM-005 · Model output rendered as HTML
@@ -77,6 +77,19 @@ Only if the app calls a language model. Provider keys in the client are covered 
 - [ ] `LLM-010` **P1** Users are told they're talking to an AI and that answers can be wrong. In the EU this is required by the AI Act, Article 50, from 2 August 2026 ([Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj))
 - [ ] `LLM-011` **P1** Messages that state amounts, dates or promises are built by your code from checked fields; the model fills fields, it doesn't write that sentence
 - [ ] `LLM-012` **P1** The provider's data settings match your privacy policy (training on your data, retention) and a data processing agreement is in place (see `LEGAL-005`)
-- [ ] `LLM-013` **P1** A small eval set (20–50 real inputs with expected results) runs before every prompt or model change
+- [ ] `LLM-013` **P1** A small eval set (20–50 real inputs with expected results) runs before every prompt or model change; each case runs three times and the verdict class must not change between runs
 - [ ] `LLM-014` **P2** Each call logs model, tokens and cost per user, without personal data
 - [ ] `LLM-015` **P2** Easy requests go to a cheaper model; only the hard ones reach the most expensive one
+
+## Chat and assistant flows
+
+For bots that hold a conversation (messaging apps, web chat, support assistants), scripted or model-driven.
+
+- [ ] `LLM-017` **P1** A pending question expires: a "waiting for X" state has a time limit, and a long or unrelated message is analysed as new input instead of being parsed as the answer. Test: let the bot ask something, wait a day, then send an unrelated text that happens to contain an answer keyword
+- [ ] `LLM-018` **P1** "I don't know" and "maybe" are accepted answers; the same clarifying question is asked at most twice, then the flow continues on the safest assumption
+- [ ] `LLM-019` **P1** One answer per input, in order: progress messages are cancelled once the answer is sent, and a double send or a worker restart doesn't produce two answers (one lock per conversation). Test: send the same input twice within two seconds; restart a worker mid-job
+- [ ] `LLM-020` **P1** The bot makes no promise the code doesn't keep: "I'll check again shortly" or "we'll call you today" is sent only when a retry job or a ticket was actually created. Test: force the model call to fail and wait; grep error handlers for promise wording
+- [ ] `LLM-021` **P1** Usage limits count the unit the user bought (cases, not messages): resends and answers to the bot's own follow-up questions use no quota, and a limit never cuts off safety guidance in an open case
+- [ ] `LLM-022` **P1** Crisis or self-harm language gets a calm reply and an emergency number before anything else, and the conversation is flagged for a person. Test: insert such a sentence mid-flow, in every supported language
+- [ ] `LLM-023` **P1** Each analysis sees only its own item: a verdict doesn't cite earlier items in the chat, and "continue" refers to the latest one. Test: send five unrelated items, then a sixth, then "continue"
+- [ ] `LLM-024` **P1** A user's own unverifiable statement ("I know this sender", "it's my bank") can only raise caution, never turn a risky verdict into "safe"

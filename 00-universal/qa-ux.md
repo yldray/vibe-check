@@ -28,7 +28,7 @@ What AI-built UIs get wrong, and what to click through by hand before launch.
 ### QA-004 · Placeholder and hardcoded text
 **Severity:** P1
 **Why it breaks:** "Lorem ipsum", "John Doe", "Your Company", `test@example.com`, default titles like "Vite + React" or "Create Next App", and English strings hardcoded in an i18n app.
-**How to test:** Search for `lorem`, `john doe`, `example.com`, `your company`, `Vite + React`, `Create Next App`. In i18n apps, search components for literal UI strings, then switch the language and walk the main flow.
+**How to test:** Search for `lorem`, `john doe`, `example.com`, `your company`, `Vite + React`, `Create Next App`. In i18n apps, search components for literal UI strings, then switch the language and walk the main flow. Legal texts and contracts kept in a CMS or database don't show up in a repo search: check the rendered live pages for `____`, "to be updated" and `[company address]`.
 **Pass:** No placeholder text; every visible string comes from the translation files.
 **Fix:** Replace the text; move strings into the translation files.
 
@@ -74,8 +74,13 @@ On split one-time-code boxes, accept the iOS code suggestion and paste a code.
 - [ ] `QA-009` **P0** Transactional e-mails arrive in the inbox (not spam) at Gmail, Outlook, Yahoo and iCloud, and every link in them points to production, not localhost (if the app sends e-mail). The sending domain has exactly one SPF record (no `+all`), DKIM set up as the provider says (CNAME vs TXT) and a DMARC record; check `dkim=pass` in the raw headers. Re-test after every hosting, DNS or mail-provider change. Login and reset codes use their own sender, never the mailbox used for bulk mail or load tests
 - [ ] `QA-010` **P1** Session expires mid-action: the user is sent to login and comes back to the same place; nothing fails silently
 - [ ] `QA-011` **P1** Slow network (DevTools "Slow 4G" / "3G"): every action shows progress within 1 second
-- [ ] `QA-012` **P1** Locale: special letters (e.g. Turkish İ/ı) sort, search and uppercase correctly, also inside keys (e-mails, codes, import headers: use invariant lowercasing), PDFs (embed a font with those glyphs) and DB columns (Unicode types, not Latin1 `varchar`); no mojibake in seed files; long translations don't break the layout; times are stored in UTC and converted once for display; dates, numbers and currency follow the user's locale
+- [ ] `QA-012` **P1** Locale: special letters (e.g. Turkish İ/ı) sort, search and uppercase correctly, also inside keys (e-mails, codes, import headers: use invariant lowercasing), PDFs (embed a font with those glyphs) and DB columns (Unicode types, not Latin1 `varchar`); no mojibake in seed files; long translations don't break the layout; times are stored in UTC and converted once for display; dates, numbers and currency follow the user's locale; keyword and urgency detectors on user text lowercase with the user's locale (`ACİL` becomes `acil` only with Turkish rules) and match inside sentences, not only one-word messages
 - [ ] `QA-013` **P1** Error messages say what happened and what to do next, in the user's language; no raw `500`, `undefined` or stack text
 - [ ] `QA-014` **P1** After every action the user can tell it worked (updated list, message or redirect)
 - [ ] `QA-015` **P2** Copy proofread: no typos, the same term for the same thing, button labels are verbs
 - [ ] `QA-016` **P1** Every translation file has the same keys as the main language: no missing, empty or untranslated entries (compare the key lists with a script or an i18n linter)
+- [ ] `QA-019` **P2** Logging out from any page (deep pages, a player, the admin area), on web and mobile and with an expired session, lands on a working page, never a blank screen
+- [ ] `QA-020` **P2** In lists and cards the whole row is the tap target, not only a small icon or the title text
+- [ ] `QA-021` **P2** Long jobs (imports, exports, batch processing) show a count, progress and an estimated finish, so users can tell a running job from a stuck one
+- [ ] `QA-022` **P2** Search finds records outside the list's default date and status filters (or says the list is filtered), and "today" means the date the user acted, not the date the record was created
+- [ ] `QA-023` **P2** Replacing an image or video in the admin updates every derived value (poster, thumbnail, duration) for users on a fresh device; derived data cached on the server is cleared with the file instead of being blamed on the browser cache

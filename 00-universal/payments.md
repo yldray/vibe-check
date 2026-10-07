@@ -182,7 +182,7 @@ Only if the app takes payments. Webhook signatures and idempotency are in `BE-00
 - [ ] `PAY-007` **P0** Test and live keys (and webhook secrets) are separate per environment; production uses live keys, nothing else does (see `ENV-003`)
 - [ ] `PAY-008` **P1** Money is stored in minor units (cents) or a decimal type, never in floats (see `JS-003`)
 - [ ] `PAY-009` **P1** Every order ends in a final state (paid, failed, refunded); orders stuck in "pending" are checked against the provider every day
-- [ ] `PAY-010` **P1** Customers get a receipt or invoice as your country requires
+- [ ] `PAY-010` **P1** Customers get a receipt or invoice as your country requires (see `INV-009`)
 - [ ] `PAY-011` **P1** The total price, including taxes and fees, is shown before the user pays; nothing is added at the last step
 - [ ] `PAY-021` **P1** After any change to provider request fields, URLs or keys, one real production payment passes and the daily count of successful payments is watched with an alert (health checks stay green while payments drop to zero)
 - [ ] `PAY-022` **P1** Billing period and price logic lives in one place; if two services must compute it (checkout and the renewal job), they share code or tests with the same cases
