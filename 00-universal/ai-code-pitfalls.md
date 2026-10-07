@@ -239,3 +239,17 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 **How to test:** `git ls-files | grep -E '@[A-Za-z0-9-]+\.[a-z]{2,}$'` (file names that end in a domain) and `git grep -nE "['\"][a-z0-9._-]+@example\.(com|org|net)['\"]"`; check that every expected `@2x` / `@3x` file exists.
 **Pass:** No asset path looks like an e-mail address, and every density variant is present under its `@Nx` name.
 **Fix:** Rename the files back, fix the strings that load them, and exclude `@[0-9]+x\.(png|jpe?g|webp|pdf)` from the scrubber.
+
+### UNI-035 · A failed ID lookup turns into a real-looking ID
+**Severity:** P1
+**Why it breaks:** An endpoint decodes an obfuscated ID or token, or looks up a slug, and the helper returns `0` (or `-1`, or a default) when it can't. The caller doesn't check, or keeps calculating with it: an unsigned subtraction or a modulo on 0 turns every failed lookup into the same large positive number, which passes `id > 0`. Records are written against an item that doesn't exist, and every report and payout that counts them is skewed. It often starts when one client sends a slug where another sends the token.
+**How to test:** Call each write endpoint that takes an item reference with a slug, a numeric ID, a valid token, a garbage token and a deleted item's ID. Then look for rows whose foreign key matches no parent row, and for one value that repeats far more often than the others.
+**Pass:** Only existing items are written; a bad reference gets a 4xx and no row; there are no orphan rows.
+**Fix:** Decoders return null or throw, never 0; check that the resolved item exists before writing; one shared resolver for every endpoint that accepts the same reference (ID, slug or token); a foreign key where the schema allows. See `UNI-005`, `UNI-024`.
+
+### UNI-036 · Shares and payouts that add up differently on every screen
+**Severity:** P1
+**Why it breaks:** Revenue-share, royalty or commission figures are computed separately for the admin report, the partner panel and the per-person panel, each filtering rows a little differently, so the totals don't match. Rows that can't be attributed to anyone (an unknown item, a deleted partner) still count in the denominator, so every partner's share shrinks while nobody receives that part. A later fix then quietly recalculates months that were already paid.
+**How to test:** For one period, compare the total and each partner's figure on every screen and export; check that the shares add up to 100%; add an unattributable row and see whether anyone's share changes; recalculate a paid month after a code change.
+**Pass:** Every screen shows the same numbers from one shared calculation; numerator and denominator use the same row filter; paid periods are frozen and changes apply from a stated date.
+**Fix:** One function or database view for the calculation, used everywhere; exclude unattributable rows from both sides; store each paid period's figures instead of recomputing them. See `UNI-023`, `UNI-025`.

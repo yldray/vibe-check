@@ -17,6 +17,7 @@ One-page summary. `→` points to the full check: same check, same severity.
 - [ ] `PRE-021` No login backdoors, codes in responses or seed accounts in production → `AUTH-009`
 - [ ] `PRE-022` Every production host runs the commit you pushed → `OPS-015`
 - [ ] `PRE-023` New and changed SQL ran once on production-shaped schema and data → `UNI-017`
+- [ ] `PRE-027` Every new model field's column exists in production before the code that reads it ships → `OPS-023`
 
 ## P1 — First week
 - [ ] `PRE-011` Rate limiting on auth and expensive endpoints → `SEC-007`

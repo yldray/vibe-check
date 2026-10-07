@@ -170,6 +170,13 @@ Only if the app takes payments. Webhook signatures and idempotency are in `BE-00
 **Pass:** Percentages and reference prices are computed from the store products; the badge hides when there is no discount; derived prices follow the store string's format.
 **Fix:** Compute from the products' numeric price and currency; format like the store's localized string, `Intl` only as fallback. See `PAY-011`.
 
+### PAY-033 · Promo codes anyone can use, or use again
+**Severity:** P1
+**Why it breaks:** AI gives a promo code only a total usage cap. A code meant for a specific group (an apology to users hit by an outage, staff, one partner's customers) works for whoever gets hold of it, and the same account can redeem it again with each new subscription. Or the rule is checked in the price preview but not where the payment is created, or not on the free, no-card path.
+**How to test:** Redeem a restricted code from an account outside the group; redeem any code twice from one account; call the payment-creation endpoint directly with the code, skipping the preview; repeat on the free-trial path.
+**Pass:** Refused everywhere with a clear message, before any payment starts.
+**Fix:** Eligibility in one server-side service (allowed list or segment, one use per account, expiry, usage cap) called by every endpoint that accepts a code; record the redemption in the same transaction as the order. See `UNI-012`.
+
 ## Before launch
 
 - [ ] `PAY-007` **P0** Test and live keys (and webhook secrets) are separate per environment; production uses live keys, nothing else does (see `ENV-003`)

@@ -72,6 +72,20 @@ Scheduled work, queues, migrations and the pipeline that ships them.
 **Pass:** Every route still answers with the same contract, or the old app version is blocked with an update prompt.
 **Fix:** A contract list from access logs; aliases for old routes; a minimum-version gate before removing anything. See `OPS-017`.
 
+### OPS-023 · A new model field takes down every query on its table
+**Severity:** P0
+**Why it breaks:** AI adds a property to an ORM model (EF Core entity, JPA entity, Prisma model, Django or SQLAlchemy model) for one small feature and leaves the column to a migration or a `.sql` file someone has to run by hand. The ORM now selects that column in every query on the table, so if the code reaches production before the column does, login, sign-up and everything else that reads the table fail with "Invalid column name" or "column does not exist", although only one admin screen uses the field. A green build and a `/health` that doesn't read the table won't notice.
+**How to test:** For each changed model, list the new fields and check that each column exists in the production schema before deploying (`dotnet ef migrations list` marks unapplied ones `(Pending)`; `prisma migrate status`; `python manage.py showmigrations`; or query `INFORMATION_SCHEMA.COLUMNS`). Search the change for `.sql` files no pipeline runs. In staging, deploy the code without the schema change and log in.
+**Pass:** The pipeline applies the schema change before the new code starts, and the deploy fails (and rolls back) when a mapped column is missing; a readiness check reads one row of each core table through the ORM.
+**Fix:** Run migrations as a pipeline step that fails the deploy; add the column first and ship the code that reads it after; never leave a schema change as a file for someone to run by hand. See `OPS-001`, `OPS-006`, `OPS-017`.
+
+### OPS-024 · An AI agent deploys its own changes
+**Severity:** P1
+**Why it breaks:** A coding agent picks up tickets, commits and triggers the production deploy itself (a `[deploy]` tag, auto-merge, a push to the release branch). Its own report says some acceptance criteria "could not be verified", the change includes a schema script for someone to run by hand, or it touches login or payments, and nothing stops the deploy because no person looks before production.
+**How to test:** List every path from an agent's commit to production (CI triggers on bot authors, commit-message tags, auto-merge rules). For a recent agent change, check what the pipeline did with unverified criteria, new `.sql` or migration files, and changes under auth, payment or schema folders.
+**Pass:** An agent's change reaches production only after a person approves it, or after automated gates pass: migrations applied by the pipeline, a smoke test of login, sign-up and payment after the deploy with automatic rollback, and any "not verified" item blocks the deploy.
+**Fix:** Let agents open pull requests, not deploy; protect the release branch; require review for schema, auth and payment paths (`CODEOWNERS`); run the post-deploy checks of `OPS-021`. See `OPS-005`, `OPS-023`.
+
 ## Before launch
 
 - [ ] `OPS-007` **P1** Long work (e-mails, exports, AI calls, image processing) runs in a queue, not inside the request
@@ -92,5 +106,5 @@ AI writes these by copying snippets. Check every file in `.github/workflows/`.
 
 - [ ] `OPS-019` **P1** Nothing the app writes at runtime (toggles, uploaded JSON, generated files) lives inside the deploy folder; the next deploy would wipe it
 - [ ] `OPS-020` **P1** Commits pushed by a workflow with `GITHUB_TOKEN` don't start other workflows; if a bot commit must deploy, the workflow triggers the deploy itself or uses a token that can
-- [ ] `OPS-021` **P1** After every deploy a business number is checked (payments, sign-ups, logins in the last hour), not only `/health`
+- [ ] `OPS-021` **P1** After every deploy a business number is checked (payments, sign-ups, logins in the last hour), not only `/health`; between deploys a synthetic check logs in (and signs up) with a test account every few minutes and alerts, because a `/health` that doesn't read the users table stays green while every login fails
 - [ ] `OPS-022` **P1** Jobs registered at app start (Hangfire `AddOrUpdate`, cron libraries) come back after you delete them in the dashboard; stopping one for good removes it in code

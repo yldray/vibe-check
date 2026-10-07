@@ -3,11 +3,11 @@
 > Not legal advice. Check the rules in your target countries (GDPR, KVKK, CCPA, etc.).
 
 - [ ] `LEGAL-001` **P0** Privacy policy published and linked (required by both app stores)
-- [ ] `LEGAL-002` **P0** Users can delete their account and data
+- [ ] `LEGAL-002` **P0** Users can delete their account and data. Deletion erases or anonymizes personal data, apart from what the law requires you to keep (invoices); an `IsDeleted` flag that keeps name, e-mail and phone is deactivation, and the screen must say so instead of promising deletion. A deletion scheduled for later (at the end of a paid period) has a job that runs and is monitored (see `OPS-004`)
 - [ ] `LEGAL-003` **P0** Terms of service published and linked
 - [ ] `LEGAL-004` **P1** Cookie consent where required: analytics, ads and other non-essential trackers load only after consent, and rejecting is as easy as accepting
 - [ ] `LEGAL-005` **P1** Data processing agreements with third parties (analytics, email, AI APIs)
-- [ ] `LEGAL-006` **P1** Personal data not sent to logs or AI prompts without need
+- [ ] `LEGAL-006` **P1** Personal data not sent to logs, AI prompts or e-mailed reports without need: a daily CSV of new users with names, e-mails and payment status stays in inboxes and gets forwarded; send counts or a link to an admin page behind login, with recipients kept in config, not code
 - [ ] `LEGAL-007` **P1** A refund and cancellation policy is published and linked wherever users pay
 - [ ] `LEGAL-008` **P1** A cookie policy lists the cookies and trackers the site sets and what each one is for
 - [ ] `LEGAL-009` **P1** Consent checkboxes start unticked, marketing consent is separate from accepting the terms, and each form that collects personal data links the privacy notice
