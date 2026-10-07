@@ -24,7 +24,7 @@ React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebas
      /plugin install vibe-check@vibe-check
      ```
    - **Cursor, Codex or others:** copy one file from [`agents/`](agents/) into your project root: `.cursorrules` for Cursor, `AGENTS.md` for Codex and others. (Claude Code without the plugin: `CLAUDE.md`.)
-2. Tell your agent: **"Run vibe check"**, or **"quick vibe check"** for P0s only (in our test on a real project: ~8 min instead of ~17 for the full audit)
+2. Tell your agent: **"Run vibe check"**, or **"quick vibe check"** for P0s only (in our test: ~8 min instead of ~17 for the full audit)
 3. Fix every **P0** before you ship. A P0 marked `NEEDS REVIEW` counts too: confirm it yourself.
 
 No config. Your AI audits the code it wrote.
@@ -145,7 +145,7 @@ Seen an AI break the same thing twice? That's a test case, and every real bug he
    **Pass:** What good looks like.
    **Fix:** The shortest correct fix.
    ```
-5. **Describe the pattern, not the project.** This repo is public: no names, paths or report excerpts from private or client projects.
+5. **Describe the pattern, not the project.** This repo is public: no names, paths or report excerpts from private or client projects, and no hint of where a check came from.
 6. **Open a PR** and tick the checklist. If you changed `agents/CLAUDE.md`, run `sh scripts/sync-agents.sh` first (it also rebuilds the plugin skill); CI checks it.
 
 Full rules, including how to add a new stack: [CONTRIBUTING.md](CONTRIBUTING.md).
