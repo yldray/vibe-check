@@ -21,5 +21,5 @@
 - [ ] `WEB-018` The bare domain and `www` both open over HTTPS with a valid certificate that names both, and one answers with a 301 to the other. Test: `curl -sI https://example.com` and `curl -sI https://www.example.com`: no certificate error, one 301 to the canonical host (see `WEB-001`)
 
 ## P2
-- [ ] `WEB-012` Sitemap, robots.txt, OG images
+- [ ] `WEB-012` Sitemap, robots.txt and OG images served from the production domain → `FE-019` `FE-021`
 - [ ] `WEB-013` Analytics on the main funnel

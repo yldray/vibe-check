@@ -26,6 +26,9 @@ One-page summary. `→` points to the full check: same check, same severity.
 - [ ] `PRE-015` Core flows covered by at least one E2E test (signup, login, main action, payment)
 - [ ] `PRE-016` 404 / 500 pages exist → `WEB-011`
 - [ ] `PRE-019` Dependency audit (`npm audit`, `dotnet list package --vulnerable`, etc.) → `SEC-010`
+- [ ] `PRE-024` Search engines can index the site, and every page has its own title, description and canonical URL → `FE-008` `FE-019` `FE-020`
+- [ ] `PRE-025` No broken links or `#` placeholders → `FE-022`
+- [ ] `PRE-026` FAQ answers match the real prices, refund and cancellation terms → `FE-024`
 
 ## P2 — Improvements
 - [ ] `PRE-017` Lighthouse / accessibility score reviewed
