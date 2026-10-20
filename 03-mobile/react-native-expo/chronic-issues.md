@@ -9,10 +9,10 @@
 
 ### EXPO-002 · OTA update breaks native code
 **Severity:** P0
-**Why it breaks:** A JS update is pushed that needs a native module the installed build doesn't have.
-**How to test:** Install the store build, push the update to a preview channel.
+**Why it breaks:** A JS update is pushed that needs a native module the installed build doesn't have. With `runtimeVersion: { policy: "appVersion" }` or a fixed string, every build of one version shares a runtime, so an update made for one build reaches another build of the same version with different native code.
+**How to test:** Install the store build, push the update to a preview channel. Read `runtimeVersion` in the app config; install two builds of one version with different native dependencies and publish one update to their channel.
 **Pass:** App opens and works.
-**Fix:** Use `runtimeVersion` policy; rebuild when native deps change.
+**Fix:** Use `runtimeVersion` policy; rebuild when native deps change. Prefer `policy: "fingerprint"`, or bump the version on every native change. If the app doesn't use OTA, remove `expo-updates` and `updates.url` so no build can download an update.
 
 ### EXPO-003 · Works in Expo Go, fails in production build
 **Severity:** P0
@@ -188,3 +188,45 @@
 **How to test:** Open the Perf Monitor on the animated screen, watch JS FPS and tap every button; grep for `requestAnimationFrame` loops and `useNativeDriver: false`.
 **Pass:** JS FPS stays near 60 and taps respond.
 **Fix:** `Animated.loop` on `transform` with `useNativeDriver: true` (or Reanimated); `pointerEvents="none"` on decorative layers.
+
+### EXPO-043 · A local store build ships the developer's `.env`
+**Severity:** P0
+**Why it breaks:** Expo CLI loads `.env`, `.env.local` and `.env.production` when it bundles and inlines every `EXPO_PUBLIC_*` value; `.env.local` wins over `.env.production`. When AI moves releases off EAS to `expo prebuild` plus `xcodebuild` / `./gradlew bundleRelease` on a laptop, the developer's API URL (localhost, a LAN IP, staging) is baked into the store binary. The upload succeeds and every request fails on users' phones.
+**How to test:** Read the release scripts: is `EXPO_NO_DOTENV=1` set, and where do the production values come from? List `.env*` files in the app folder and their `EXPO_PUBLIC_` hosts. Build the release the way it ships and search the bundle for dev hosts: iOS `strings <App>.app/main.jsbundle | grep -nE "localhost|127\.0\.0\.1|10\.0\.2\.2|192\.168\.|staging"`; Android `unzip -p app-release.aab base/assets/index.android.bundle | strings | grep -nE "…"` with the same pattern.
+**Pass:** The bundle contains only production hosts, and the release script stops before upload when it finds a dev host.
+**Fix:** `EXPO_NO_DOTENV=1` plus explicit production values in release scripts, or build in CI from a clean checkout; make the bundle search a blocking step before upload. See `EXPO-001`, `MOB-021`.
+
+### EXPO-044 · Native packages left behind after an SDK upgrade
+**Severity:** P0
+**Why it breaks:** AI bumps `expo`, then adds or keeps native packages with plain `npm install` / `pnpm add`, so some stay on the previous SDK's version (image picker, secure store, camera). Type checks and Expo Go pass, but the iOS build fails inside the package's native code or the Android release crashes at launch (`NoClassDefFoundError` in `expo.modules.kotlin`). A lockfile hides the drift until the next native build.
+**How to test:** Run `npx expo install --check` and `npx expo-doctor` in the app folder. After an SDK upgrade, build and cold start a release build on iOS and Android.
+**Pass:** Both commands report nothing, and release builds start on both platforms.
+**Fix:** `npx expo install --fix`; add native packages only with `npx expo install <pkg>`; run `npx expo install --check` in CI so drift fails the build. See `EXPO-003`, `MOB-022`.
+
+### EXPO-045 · Media permission requests that can never be granted
+**Severity:** P1
+**Why it breaks:** AI calls `ImagePicker.requestMediaLibraryPermissionsAsync()` before `launchImageLibraryAsync()` on both platforms. The Android picker needs no permission, but on Android 12 and lower that request still asks for `WRITE_EXTERNAL_STORAGE` and `READ_EXTERNAL_STORAGE`. If one of them is in `android.blockedPermissions` (often added to get through a store review), the answer is "denied" and no dialog ever appears, so the feature is locked on older phones. The reverse also happens: the expo-media-library config plugin adds `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` and `READ_MEDIA_AUDIO` by default, even for a save-only feature, and Play allows photo and video permissions only for apps that need broad library access.
+**How to test:** Grep for `request*PermissionsAsync` right before picker calls. For each entry in `android.blockedPermissions`, find the library request that still asks for it. Dump the merged manifest of the release build (`aapt dump permissions app-release.apk` or `bundletool dump manifest --bundle app-release.aab`). Fresh-install the release build on Android 12 or lower, Android 13+ and iOS, and use every photo, camera and save flow.
+**Pass:** Each flow either shows a system dialog or needs none, and no "permission required" message appears without a dialog. The merged manifest lists only permissions some flow uses.
+**Fix:** Ask for library access only where the platform needs it (iOS), not before the Android system picker. For save-only flows call `MediaLibrary.requestPermissionsAsync(true)` (write-only) and set the plugin's `granularPermissions` to the media types the app really reads (an empty list if it only saves). After blocking a permission, retest the library's own request on the oldest supported Android. See `FLT-012`, `MOB-006`, `PLAY-008`.
+
+### EXPO-046 · Forms inside a bottom-sheet library
+**Severity:** P1
+**Why it breaks:** AI puts every add or edit form into a gesture bottom sheet (`@gorhom/bottom-sheet`) with a plain `TextInput` and `ScrollView`. The sheet follows the keyboard only for its own input component, so the keyboard covers the focused field and Save. On a real Android phone a plain scroll view inside the sheet often doesn't scroll, because the sheet's pan gesture takes the drag: the bottom of a long form can't be reached, and the typed values are lost when the sheet closes. A sheet drawn inside the screen also leaves the tab bar visible and tappable under the backdrop. An emulator driven by mouse or `adb` swipes may scroll fine.
+**How to test:** Grep for the sheet library, then for plain `TextInput`, `ScrollView` or `FlatList` inside sheets instead of `BottomSheetTextInput`, `BottomSheetScrollView` and `BottomSheetFlatList`. On a small real Android phone and an iPhone, open every sheet form, fill the last field with the keyboard open, scroll to Save with a finger, and tap the tab bar behind the backdrop.
+**Pass:** Every field and the Save button can be reached with the keyboard open, the tab bar can't be tapped while a sheet is open, and closing a sheet with unsaved input asks first.
+**Fix:** Use the library's own input and scroll components, and `BottomSheetModal` with its provider above the navigator so the sheet covers the tab bar. Or move long forms to a full screen (or an RN `Modal` with `KeyboardAvoidingView` and `ScrollView`) and keep sheets for short pickers. See `EXPO-005`, `MOB-013`, `MOB-002`.
+
+### EXPO-047 · Media URLs that only work in a browser
+**Severity:** P1
+**Why it breaks:** The API returns paths relative to the site (`/uploads/a.jpg`, `/api/videos/12/thumbnail`), which a browser resolves against the page's origin. AI passes them to `<Image source={{ uri }}>`, which needs an absolute URL, so covers, avatars and thumbnails show as empty boxes and nothing is logged unless `onError` is set. Video splits the same way: Android's player (Media3 / ExoPlayer) picks the format from the URL's extension, so an HLS stream at a URL without `.m3u8` is treated as a plain file and never starts, while the same URL often plays on web and iOS.
+**How to test:** Grep `uri:` and player `source` values that come from API fields, and query the API for image and video fields that start with `/` or have no scheme. Open every screen with images in an Android and an iOS release build, and play every kind of video on a real Android device.
+**Pass:** Every image and video loads on both platforms.
+**Fix:** Resolve every media field through one `mediaUrl()` helper that prefixes the API base URL, or return absolute URLs from the API. Set the stream type explicitly (`contentType: 'hls'` in an expo-video source, `type: 'm3u8'` in a react-native-video source), or serve playlists at a path that ends in `.m3u8`. See `MOB-025`.
+
+### EXPO-048 · Video inside a scrolling screen breaks on Android
+**Severity:** P2
+**Why it breaks:** On Android, expo-video's `VideoView` renders into a `SurfaceView` by default (`surfaceType="surfaceView"`), a separate layer outside the normal view drawing. Inside a scroll view, next to another video or after the stream changes resolution, it can draw at the wrong scale or outside its frame (the picture zooms into a corner). AI also hides the video with `opacity: 0` until it reports ready; on Android it can then stay black or on the first frame while the status says playing. On a slow network the first load fails, nothing retries, and the black video covers the poster for good.
+**How to test:** On a real mid-range Android with a throttled network, scroll while a video plays, grab a frame every 10 seconds for a minute, let the quality switch, and make the first request fail. Grep video components for `surfaceType` / `viewType` and for `opacity: 0` on the player.
+**Pass:** The picture stays inside its frame at the right scale, the poster stays until playback time actually moves, and a failed load retries once or shows a "Try again" button.
+**Fix:** `surfaceType="textureView"` on `VideoView` (set it once; it can't change at runtime), or the texture `viewType` in react-native-video, for videos inside scrolling or overlapping layouts; keep the surface view for DRM streams that need a secure surface. Keep the video view visible with the poster on top, and remove the poster when `timeUpdate` shows the time moving (it needs `timeUpdateEventInterval` above 0), not on `readyToPlay`. Add a load timeout, one automatic retry and a "Try again" button. See `EXPO-019`, `EXPO-026`.

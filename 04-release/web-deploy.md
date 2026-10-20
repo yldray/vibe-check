@@ -1,7 +1,7 @@
 # Web deploy checklist
 
 ## P0
-- [ ] `WEB-001` HTTPS with auto-renewing certificate; HTTP redirects to HTTPS
+- [ ] `WEB-001` HTTPS with auto-renewing certificate; HTTP redirects to HTTPS. Prove the renewal once instead of assuming it: force one renewal (`certbot renew --force-renewal`, `wacs --renew --force`), rerun the setup or deploy script, then check what is served: `echo | openssl s_client -connect <host>:443 -servername <host> 2>/dev/null | openssl x509 -noout -issuer -enddate` shows the real CA and the new date on every hostname. A script that binds certificates itself must not fight the renewal tool or fall back to a self-signed certificate (see `WIN-003`)
 - [ ] `WEB-002` Production env vars set; debug off
 - [ ] `WEB-003` DB backups scheduled and a restore tested
 - [ ] `WEB-004` Error tracking connected
@@ -15,10 +15,10 @@
 - [ ] `WEB-008` CDN / caching for static assets
 - [ ] `WEB-009` SPA fallback / redirects configured
 - [ ] `WEB-010` Rollback plan tested once
-- [ ] `WEB-011` Custom 404 / 500 pages
+- [ ] `WEB-011` Custom 404 / 500 pages, and a missing page still answers 404: a server that runs the error page as a normal request, or an SPA fallback, answers 200, so crawlers index broken links and smoke tests pass (an SPA's not-found view at least sets `noindex`). Test: `curl -s -o /dev/null -w '%{http_code}' https://<site>/no-such-page` prints 404, and the post-deploy check fails on 200 instead of warning. IIS: see `WIN-001`
 - [ ] `WEB-014` Redirect and rewrite rules don't match API routes (a `/news` rule must not catch `/api/news`); `/api/*` is curled after adding one
 - [ ] `WEB-017` Other sites can't frame your pages: every HTML response sends `Content-Security-Policy: frame-ancestors 'self'` (or `'none'`) as an HTTP header, plus `X-Frame-Options: SAMEORIGIN` for old browsers. Browsers ignore both in a `<meta>` tag, so a static site needs a host that can set headers. Test: `curl -sI https://<site>/login | grep -iE "frame-ancestors|x-frame-options"` (see `SEC-006`)
-- [ ] `WEB-018` The bare domain and `www` both open over HTTPS with a valid certificate that names both, and one answers with a 301 to the other. Test: `curl -sI https://example.com` and `curl -sI https://www.example.com`: no certificate error, one 301 to the canonical host (see `WEB-001`)
+- [ ] `WEB-018` The bare domain and `www` both open over HTTPS with a valid certificate that names both, and one answers with a 301 to the other. Test: `curl -sI https://example.com` and `curl -sI https://www.example.com`: no certificate error, one 301 to the canonical host (see `WEB-001`). Redirect only GET and HEAD page requests and leave out `/api` and payment or webhook callbacks: callbacks registered on the other host usually don't follow redirects, and a 301 can turn a POST into a GET. Until the redirect is live, log in on both hosts: a cookie scoped to one host is invisible on the other, so a user who arrived on `www` logs in and still looks logged out
 
 ## P2
 - [ ] `WEB-012` Sitemap, robots.txt and OG images served from the production domain → `FE-019` `FE-021`

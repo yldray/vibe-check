@@ -18,6 +18,10 @@ One-page summary. `→` points to the full check: same check, same severity.
 - [ ] `PRE-022` Every production host runs the commit you pushed → `OPS-015`
 - [ ] `PRE-023` New and changed SQL ran once on production-shaped schema and data → `UNI-017`
 - [ ] `PRE-027` Every new model field's column exists in production before the code that reads it ships → `OPS-023`
+- [ ] `PRE-028` Restart the database while the app runs: the app and every worker recover without a manual restart → `DB-001`
+- [ ] `PRE-029` A record or user with no tenant is visible to no tenant → `UNI-042`
+- [ ] `PRE-030` Inviting or adding an existing account never changes its password → `AUTH-016`
+- [ ] `PRE-031` Social sign-in checks the token's audience and doesn't merge accounts by an e-mail the provider doesn't vouch for → `AUTH-017`
 
 ## P1 — First week
 - [ ] `PRE-011` Rate limiting on auth and expensive endpoints → `SEC-007`

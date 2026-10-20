@@ -51,10 +51,10 @@
 
 ### REACT-008 · Hydration mismatch (Next.js)
 **Severity:** P1
-**Why it breaks:** `Date.now()`, `Math.random()` or `window` used during server render.
-**How to test:** Check the console on first load in production build.
+**Why it breaks:** `Date.now()`, `Math.random()` or `window` used during server render. `Intl` output also differs between Node's ICU and the browser's: `Intl.DisplayNames` (language and region names), `toLocaleString`, `Intl.DateTimeFormat` and `Intl.Collator` can return different text for the same locale, and the server's time zone (often UTC) isn't the visitor's.
+**How to test:** Check the console on first load in production build. Grep server-rendered components for `Intl.` and `toLocale`, and load the page in two browsers set to different languages and time zones.
 **Pass:** No hydration warnings.
-**Fix:** Move client-only code to useEffect or a client component.
+**Fix:** Move client-only code to useEffect or a client component. Format locale-dependent strings on the server with an explicit locale and `timeZone` and pass them as props for the first render, or compute them on the client only after hydration.
 
 ### REACT-024 · Hook after an early return
 **Severity:** P0
@@ -69,6 +69,20 @@
 **How to test:** Run ESLint with `react-hooks/set-state-in-effect` on. In each date or range picker, pick the 31st, switch to a 30-day month and to February, and pick February 29, then switch to a non-leap year. Log the value passed to `onChange` or the form on every render.
 **Pass:** Lint is clean; no out-of-range value is rendered, emitted or submitted.
 **Fix:** Keep the raw state and derive the corrected value during render (`const day = Math.min(raw.day, daysInMonth)`), or correct it in the event handler that changes the month.
+
+### REACT-028 · Query cache shared between accounts and stale after changes
+**Severity:** P1
+**Why it breaks:** AI uses TanStack Query, SWR or Apollo with keys like `['my-courses']` or `['favorites']` that hold no user id, and logout doesn't clear the cache. On a shared browser or phone (React Native too), the next account sees the previous user's plan, profile or list until a refetch lands. A change on one screen also doesn't invalidate the others: the user adds a favorite, opens "My list", sees the old cached list and thinks the save failed.
+**How to test:** Log in as A and open the account screens. Log out without reloading or killing the app, log in as B, and open every user-specific screen before anything refreshes. Then change data on one screen (favorite, rating, progress) and open every other screen that shows it.
+**Pass:** B never sees A's data, not even for a moment; every screen shows the new value on arrival.
+**Fix:** Put the user id in every user-scoped key. On logout and account switch call `queryClient.clear()` (SWR: `mutate(() => true, undefined, { revalidate: false })`; Apollo: `client.clearStore()`) and delete any persisted copy of the cache. After each mutation, invalidate every key that shows that data; with a shared prefix (`['favorites', userId]`), `invalidateQueries({ queryKey: ['favorites'] })` covers them all. See `REACT-020`, `AUTH-004`.
+
+### REACT-029 · Listener attached once, before the element exists
+**Severity:** P2
+**Why it breaks:** AI writes `useEffect(() => { const el = ref.current; if (!el) return; el.addEventListener(…) }, [])`. The component renders `null`, a spinner or an empty state until data arrives, so the effect's only run finds no element and returns: wheel handlers, arrow keys and observers never work on the real list. The player version: the code subscribes to a "ready" or `canplay` event after loading has started, the event has already fired, and the poster stays over a playing video.
+**How to test:** Grep for `[]`-dependency effects that read `ref.current` and return early, in components that render conditionally. Throttle the network so data arrives late and use the feature. For players, also test with a cached or very fast source.
+**Pass:** The feature works when data is slow and when the source is instant.
+**Fix:** Use a callback ref (it runs when the element mounts), or put the render condition (`items.length > 0`) in the dependencies. After subscribing, read the current state (`video.readyState`, expo-video `player.status`) and treat "already ready or playing" as ready. See `REACT-005`.
 
 ## Next.js server (Server Actions, route handlers, proxy / middleware)
 
@@ -113,3 +127,17 @@
 **How to test:** `grep -rn "process.cwd()" src/app src/lib`; run `next build` and look for each file under `.next/standalone` (or in the deploy image); call the route on the production build.
 **Pass:** Every file read at runtime is in the build output, or imported.
 **Fix:** `outputFileTracingIncludes` in `next.config`, or import the file as a module; read optional files only after the feature's config check.
+
+### REACT-030 · Next.js standalone output deployed as the build leaves it
+**Severity:** P1
+**Why it breaks:** `output: 'standalone'` is a minimal server, not a finished package. `.next/standalone` contains neither `public` nor `.next/static`, so CSS, JS and images return 404 until they are copied in. Its `node_modules` can hold symlinks (pnpm's layout, Turbopack's links for external packages under `.next/node_modules`) that point into the build machine's folders, so an archive that keeps them as links arrives broken. `server.js` reads `PORT` and `HOSTNAME` from the process environment at start, so a `PORT` in `.env` files is ignored, and Docker sets `HOSTNAME` to the container id, so the server binds only that address and a health check on `localhost` gets no answer. Native packages (`sharp`, `better-sqlite3`) built on the CI's OS or CPU don't load on a different server.
+**How to test:** `find .next/standalone -type l` (Windows: `Get-ChildItem .next\standalone -Recurse -Attributes ReparsePoint`). Unpack the artifact on a clean machine with the server's OS and CPU, start `node server.js` with only the service's environment, and request a page, a `/_next/static/` file and an image from `public`.
+**Pass:** No links in the package; all three load; the server listens on the intended port and interface.
+**Fix:** After `next build`, `cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/` (or serve both from a CDN). Archive with links followed (`cp -rL`, `tar -h`) and check again that none remain. Set `PORT` and `HOSTNAME` (`0.0.0.0` in containers) in the service or container definition. Build on the server's OS and CPU architecture. See `REACT-026`, `OPS-015`, `OPS-016`.
+
+### REACT-031 · Logged-in users see the visitor version of a cached page
+**Severity:** P2
+**Why it breaks:** AI makes the "logged in → go to the member area" decision only in middleware (`proxy.ts`). The home page is static; when a CDN, the browser's back/forward cache or the Next.js client router cache serves it, no request reaches that check, and members see the visitor page with locked content and a "Sign up" button. Right after login the same happens when the client opens a page it prefetched while logged out.
+**How to test:** Log in, then open the root URL from the address bar, the logo, the back button and a new tab. Log in from every login screen and note where you land.
+**Pass:** A logged-in user never sees the visitor version beyond a brief loading state.
+**Fix:** Repeat the check in the page on the client and redirect with `router.replace()`, also on `pageshow` when `event.persisted` is true; or make session-dependent pages dynamic (read `cookies()`) and `no-store`. After login, call `router.refresh()` (or set the cookie in a Server Action, which clears the router cache) and navigate straight to the member page. See `REACT-019`, `REACT-020`, `WEB-016`.

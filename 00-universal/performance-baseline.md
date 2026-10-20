@@ -4,7 +4,7 @@
 - [ ] `PERF-002` **P1** DB indexes on foreign keys and filtered / sorted columns
 - [ ] `PERF-003` **P1** No N+1 queries on list pages
 - [ ] `PERF-004` **P1** Images are served at the size they're displayed (`srcset` / `sizes`), in WebP or AVIF, with explicit `width` and `height` (or `aspect-ratio`) so nothing shifts, and lazy loaded below the fold. Never lazy-load the hero image (see `PERF-016`)
-- [ ] `PERF-005` **P1** Load test at 10x expected traffic on the main flow (e.g. login → list → main action) with k6, JMeter or Artillery: ramp up over a few minutes, hold for 10. Pass: p95 stays within `PERF-001`, errors under 1%, memory doesn't keep climbing
+- [ ] `PERF-005` **P1** Load test at 10x expected traffic on the main flow (e.g. login → list → main action) with k6, JMeter or Artillery: ramp up over a few minutes, hold for 10. For chat bots and queue-backed AI features the webhook's 200 says nothing: send the expected peak at once (e.g. 20 conversations each pasting a message) and measure the time to the last reply. Model calls mostly wait on the network, so a worker pool sized for CPU work (one per core) makes the 20th user wait minutes; raise it until the last reply meets your target without provider 429s. Pass: p95 stays within `PERF-001` (for queued AI work, the last reply within your target), errors under 1%, memory doesn't keep climbing
 - [ ] `PERF-006` **P2** Caching for read-heavy data
 - [ ] `PERF-007` **P2** Bundle size reviewed
 - [ ] `PERF-008` **P1** Core Web Vitals are "good" at the 75th percentile: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (PageSpeed Insights or the `web-vitals` library on real users). Read the **Mobile** tab: it runs on a throttled phone, and a good desktop score often hides a mobile LCP several times slower

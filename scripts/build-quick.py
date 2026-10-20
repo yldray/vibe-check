@@ -39,9 +39,12 @@ SECTIONS = [
     ("04-release/google-play.md", "Release: Google Play"),
     ("04-release/app-store.md", "Release: App Store"),
     ("04-release/web-deploy.md", "Release: web"),
+    ("04-release/windows-server.md", "Release: Windows server / IIS"),
     ("05-payments/paytr", "Payments: PayTR"),
     ("05-payments/iyzico", "Payments: iyzico"),
     ("05-payments/stripe", "Payments: Stripe"),
+    ("06-database/_common", "If a server or worker talks to a database"),
+    ("06-database/sqlite", "SQLite on a server"),
 ]
 SKIP = {"00-universal/pre-launch-checklist.md", "00-universal/README.md"}
 

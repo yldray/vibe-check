@@ -1,0 +1,73 @@
+# Database — common checks
+
+For every app that talks to a database (SQL or not) from a server, worker or function. Most of these only show up when the database restarts, fails over or sits idle, so test them by breaking the connection on purpose.
+
+### DB-001 · A dropped connection stops the app until someone restarts it
+**Severity:** P0
+**Why it breaks:** AI opens one connection at startup (a single `new Client()`, `mysql.createConnection()`, a static `SqlConnection`, a module-level `connect()` called once) and reuses it forever, or uses a pool with no error listener. When the database restarts or fails over, or a network blip or idle timeout closes the socket, every later query fails ("Connection terminated", "server has gone away", "Cannot enqueue Query after fatal error"), or the process crashes on an unhandled `error` event (node-postgres `Pool`, node-redis clients). Worker loops die the same way when the dequeue or "fetch next job" call sits above the loop's try block: the processing is guarded, the read that touches the database isn't.
+**How to test:** Grep for long-lived single connections (`new Client(`, `createConnection(`, `static .*SqlConnection`, a connection stored in a global) and for pools and clients without an error handler (`new Pool(` or `createClient(` with no `.on('error'`). In every worker loop, check that the queue read is inside the try. Then, with the app and its workers running, restart the database (`docker restart <db>`, `systemctl restart postgresql`, `net stop` / `net start` for a Windows service), wait 30 seconds, use the app and watch every worker and consumer.
+**Pass:** While the database is down, requests fail fast with a clear error and nothing crashes; within about a minute of it coming back, the app and every worker serve and process again without a manual restart.
+**Fix:** Use the driver's pool and take a connection per request or unit of work; add error listeners to pools and clients; wrap the whole worker iteration, dequeue included, in try/catch with a short wait before the next try; if the process does exit, exit with a non-zero code so a supervisor restarts it. See `DB-002`, `DOTNET-033`, `OPS-004`.
+
+### DB-002 · After a reboot, the app starts before the database and stays down
+**Severity:** P1
+**Why it breaks:** After a server reboot, a host update or `docker compose up`, the app or worker starts faster than the database, fails its first connection and exits, or keeps running half-initialized (settings not loaded, migrations skipped, a worker that gave up). A service manager that only restarts on a crash, or stops after three tries, leaves it down until someone notices. Some clients never retry a failed first connect on their own (Mongoose, for example). The service settings that would fix this (start type, dependency, recovery) are often written by a "create service" step that runs only on first install, so later fixes never reach the server. A scheduled database restart (a weekly maintenance job, `net stop <db> /y`) also stops every service that depends on the database and starts only the database again.
+**How to test:** Reboot the server, or stop the database, start the app, and start the database 60 seconds later. Check that the app ends up serving and workers process jobs with no manual step. Read how the app is started: `sc qc <service>` and `sc qfailure <service>` on Windows, the unit's `After=` and `Restart=` on systemd, `depends_on` in compose. Compare them with what the deploy script sets. Run the scheduled database restart, if there is one, and check that the app's services are running afterwards.
+**Pass:** The app retries the first connection with backoff (or exits non-zero and is restarted until the database is up) and becomes healthy on its own after a reboot and after a scheduled database restart; every deploy applies the service settings, not only the first install.
+**Fix:** Retry the startup connection with backoff and a cap. Compose: `depends_on: { db: { condition: service_healthy } }` with a `pg_isready` or `mysqladmin ping` healthcheck. systemd: `After=` and `Wants=` the database unit, `Restart=on-failure`, `RestartSec=5`. Windows: `sc config <service> depend= <db service>`, `start= delayed-auto`, and recovery actions (`sc failure <service> reset= 86400 actions= restart/10000/restart/30000/restart/60000`). Apply these settings idempotently in every deploy. A script that restarts the database starts the dependent services again. Ordering alone isn't enough: a database service that has started may not accept connections yet, so keep the retry.
+
+### DB-003 · Transient errors are never retried, or retried forever
+**Severity:** P1
+**Why it breaks:** Managed databases fail over, throttle and drop connections for a few seconds as a matter of routine. With no retry, each blip becomes a burst of 500s. The AI fix is often worse: a `while (true)` retry with no delay and no cap, which hammers the database as it comes back, floods the logs and holds requests until the client gives up. Retrying every error also retries constraint violations and syntax errors that will never succeed.
+**How to test:** Find the ORM or driver retry setting (`EnableRetryOnFailure`, a `retry` option, Polly, `tenacity`, `p-retry`) and every hand-written retry loop. Each needs a maximum number of attempts, exponential backoff with jitter, and a list of transient errors (timeouts, connection reset, deadlock victim, failover codes). Block the database port for 10 seconds under light load.
+**Pass:** Short blips are absorbed by a few bounded retries; longer outages fail fast with a clear error; no retry loop without a delay and a cap.
+**Fix:** Use the driver's or ORM's retry strategy (EF Core `EnableRetryOnFailure()` for SQL Server and Npgsql) or a library with exponential backoff, jitter and a cap; retry only transient errors; add a circuit breaker for longer outages.
+
+### DB-004 · A retry runs the same write twice
+**Severity:** P1
+**Why it breaks:** The connection drops after the database committed but before the app got the reply, so the retry inserts the order, books the seat or sends the message again. With EF Core's retrying strategy, code that starts its own transaction throws at runtime unless the whole transaction block runs inside the execution strategy.
+**How to test:** For every write that can be retried (by the ORM, a job runner, a queue redelivery or the client), ask what happens if the first attempt already succeeded. Cut the connection right after commit (a proxy such as Toxiproxy, or kill the session) and count rows. Grep for `BeginTransaction` in projects that set `EnableRetryOnFailure`.
+**Pass:** A retried write leaves exactly one row or side effect; transaction blocks are retried as one unit.
+**Fix:** A unique constraint or idempotency key on the natural key; upserts (`INSERT … ON CONFLICT DO NOTHING`, `MERGE`); in EF Core wrap the block in `Database.CreateExecutionStrategy().ExecuteAsync(...)`. See `OPS-003`, `UNI-012`.
+
+### DB-005 · Idle connections die overnight, so the first request fails
+**Severity:** P1
+**Why it breaks:** The pool keeps connections open, but something else closes them silently: the database's own idle limit (MySQL `wait_timeout`, 8 hours by default), a pooler or proxy, a firewall, or a cloud load balancer or NAT that drops idle TCP connections after a few minutes. The first requests in the morning, or after a quiet weekend, fail with "server has gone away", "connection reset" or "An existing connection was forcibly closed by the remote host".
+**How to test:** Read the pool settings (max lifetime, idle timeout, validation or pre-ping, TCP keepalive) and compare them with the idle limit of the database and of everything between the app and it. Leave staging idle for longer than that limit, then send a request.
+**Pass:** The first request after a long idle period succeeds.
+**Fix:** Validate or recycle connections before anything else closes them: SQLAlchemy `pool_pre_ping=True` and `pool_recycle`, Django `CONN_HEALTH_CHECKS = True`, HikariCP `maxLifetime` and `keepaliveTime` below the shortest idle limit on the path, Npgsql `Keepalive=30`, a pool idle timeout below the infrastructure's.
+
+### DB-006 · Connections run out under load
+**Severity:** P1
+**Why it breaks:** Connections are opened and not returned (no `using`, `finally` or `release()` on an error path), or pool size times instance count exceeds the server's connection limit (PostgreSQL defaults to 100). Serverless functions and dev hot reload make it worse by creating a new pool or ORM client per invocation or per reload. Requests then hang for the pool timeout and fail with "too many connections", "remaining connection slots are reserved" or "timeout acquiring a connection".
+**How to test:** Grep for manual `connect()` / `getConnection()` / `new SqlConnection` without a release on every path, and for an ORM client created inside a handler. Multiply the maximum pool size by the maximum number of instances or concurrent functions and compare with the server limit (`SHOW max_connections;`). Run a load test and watch the connection count (`pg_stat_activity`, `sys.dm_exec_sessions`, `SHOW PROCESSLIST`).
+**Pass:** The connection count stays below the limit at 10x expected traffic and falls back to baseline afterwards.
+**Fix:** `using` / `try … finally` / `pool.query()`; one pool or ORM client per process (a module-level singleton that survives hot reload); size pools so the total stays below the limit with room for admin connections; put a pooler (PgBouncer, the provider's pooler, RDS Proxy) in front of serverless functions. See `JAVA-002`, `PERF-005`.
+
+### DB-007 · No timeouts, so one slow query holds everything
+**Severity:** P1
+**Why it breaks:** There's no statement, command or lock timeout. A missing index or a lock wait makes requests hang until the gateway gives up, while their connections stay busy and drain the pool (`DB-006`). A transaction that stays open around an outside call (HTTP, e-mail, a language model) holds its locks for the whole call and blocks every other writer of those rows.
+**How to test:** Look for statement and command timeout settings, and for outside calls between the start and the commit of a transaction. In staging, lock a row from a second session (`BEGIN; SELECT … FOR UPDATE;` and leave it open), then call an endpoint that writes that row.
+**Pass:** The request fails within a few seconds with a clear error; no transaction spans an outside call.
+**Fix:** PostgreSQL `statement_timeout`, `lock_timeout` and `idle_in_transaction_session_timeout`; EF Core `CommandTimeout`; JDBC `queryTimeout`; driver-level timeouts in Node and Python. Do outside calls before or after the transaction, not inside it. See `JAVA-020`.
+
+### DB-008 · A short database outage restarts every instance at once
+**Severity:** P1
+**Why it breaks:** AI puts the database check in the health probe the platform uses to kill and restart containers (a Kubernetes `livenessProbe`, a hosting health check with auto-restart). A 20-second database blip then restarts every instance together, they all reconnect at the same moment, and a blip becomes an outage. The opposite mistake, a `/health` that never touches the database, stays green while every request fails (`OPS-006`).
+**How to test:** Read the probe and health-check settings (Kubernetes manifests, App Service or load balancer health checks, Docker `HEALTHCHECK` with a restart policy). Stop the database for 30 seconds and watch whether instances restart.
+**Pass:** The restart (liveness) check covers only the process; a separate readiness check reads the database and takes the instance out of rotation without killing it.
+**Fix:** Split `/health/live` (process is up) from `/health/ready` (can read the database); point restarts at the first and traffic routing and post-deploy checks at the second.
+
+### DB-009 · Nobody hears that the database is unreachable
+**Severity:** P1
+**Why it breaks:** Connection errors are caught and logged at debug level, or swallowed in an empty catch; workers wait quietly; the first alert is a customer. Storage fills up (logs, temp space, one growing table) until the database refuses writes or turns read-only, with no warning before it happens.
+**How to test:** In staging, stop the database at night: who is notified, how and when? List the alerts on connection errors, storage use, connection count and the age of the oldest unprocessed job.
+**Pass:** Someone is alerted within about 5 minutes through a channel people read; storage alerts start at 80%.
+**Fix:** An outside uptime check on the readiness endpoint from `DB-008`; alerts on connection error rate, storage and connection count; a heartbeat with a last-success age for every worker. See `OPS-004`, `WEB-006`.
+
+### DB-010 · Production data fixed by a hand-run script with no preview, guard or undo
+**Severity:** P1
+**Why it breaks:** After a bug fix, the rows the bug already damaged stay damaged (stuck, skipped, linked to the wrong record), so AI writes an `UPDATE` or `DELETE` script that someone runs by hand on production. The ID list was typed by hand and is stale when it runs; nothing counts or copies the affected rows first; a half-finished first run gets run again; table names come from the ORM (pluralised class names), not the database; rows are found by a display name that is spelled differently in production. SQL Server adds its own traps: `SELECT … INTO backup` copies the `IDENTITY` property, so a later `INSERT INTO backup SELECT *` fails; `IF OBJECT_ID('x') IS NOT NULL AND EXISTS (SELECT … FROM x)` still fails with "Invalid object name" when `x` is missing; without `SET XACT_ABORT ON` an error leaves half the changes in place.
+**How to test:** For every data-fix or seed script in the change: run it in preview mode against production (or a fresh copy) and read the affected count and a sample; run it on a copy where the backup table already has rows and on one where a referenced table is missing; run it twice.
+**Pass:** The script finds its rows from live data with the same rule as the fixed code, defaults to preview, refuses to run when the count is above an expected limit or the backup table isn't empty, copies affected rows to a backup and checks copied = changed, runs in one transaction that aborts on any error, and has a written undo. A second run changes nothing.
+**Fix:** A data-fix template: an `@apply = 0` (or `--dry-run`) default, the guards above, a backup with a count check, one transaction, one log or event row per changed record, and an undo script next to it. Find rows by ID, not by name. Commit the script with the date it ran. See `OPS-001`, `UNI-017`, `UNI-038`.

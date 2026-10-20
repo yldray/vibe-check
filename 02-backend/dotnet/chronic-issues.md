@@ -150,9 +150,9 @@
 ### DOTNET-030 · User HTML rendered with `Html.Raw` or `MarkupString`
 **Severity:** P0
 **Why it breaks:** To show formatted descriptions, comments or AI answers, AI writes `@Html.Raw(Model.Description)`, `new HtmlString(...)` or Blazor `@((MarkupString)message.Text)`, often with HTML from Markdig's `Markdown.ToHtml(...)`. These skip Razor's encoding, and Markdig passes raw HTML through unless the pipeline calls `DisableHtml()`, so one saved `<img src=x onerror=...>` runs in every visitor's session.
-**How to test:** Grep `.cshtml`, `.razor` and `.cs` files for `Html.Raw(`, `HtmlString(`, `MarkupString` and `Markdown.ToHtml(`. Save `<img src=x onerror=alert(1)>`, plain and inside Markdown, into every field, chat message and model answer that reaches one of them, and open the page as another user.
+**How to test:** Grep `.cshtml`, `.razor` and `.cs` files for `Html.Raw(`, `HtmlString(`, `MarkupString` and `Markdown.ToHtml(`. Save `<img src=x onerror=alert(1)>`, plain and inside Markdown, into every field, chat message and model answer that reaches one of them, and open the page as another user. In Web Forms, also grep code-behind for HTML concatenated into `Literal` and `Label` (`.Text = "<`; both render `Text` unencoded) and for `<script>` strings built from data (`RegisterStartupScript`), and save `</script><img src=x onerror=alert(1)>` and `';alert(1);//` into every message or rule text that reaches them.
 **Pass:** No alert; the payload shows as text or is removed.
-**Fix:** Render as text (Razor encodes `@value`), or run the final HTML through an allow-list sanitizer (`new HtmlSanitizer().Sanitize(html)`) before `Html.Raw` / `MarkupString`. See `REACT-006`, `LLM-005`.
+**Fix:** Render as text (Razor encodes `@value`), or run the final HTML through an allow-list sanitizer (`new HtmlSanitizer().Sanitize(html)`) before `Html.Raw` / `MarkupString`. In Web Forms, `HttpUtility.HtmlEncode` for HTML and `HttpUtility.JavaScriptStringEncode` for JS strings; escaping only `'` and `\` leaves `</script>` open. See `REACT-006`, `LLM-005`.
 
 ### DOTNET-031 · SignalR groups and users chosen by the client
 **Severity:** P0
@@ -171,9 +171,9 @@
 ### DOTNET-033 · One background exception stops the whole app
 **Severity:** P1
 **Why it breaks:** AI writes a `BackgroundService` loop (`while (!stoppingToken.IsCancellationRequested) { await DoWorkAsync(); await Task.Delay(...); }`) with no try/catch inside. Since .NET 6, an unhandled exception from `ExecuteAsync` stops the host (`BackgroundServiceExceptionBehavior.StopHost`), so one database timeout in a cleanup job takes the API down with it, and through .NET 10 the process exits with code 0, which a service manager that restarts only on failure leaves down. The opposite fix, `BackgroundServiceExceptionBehavior.Ignore`, keeps the API up while the job stays dead.
-**How to test:** Grep for `: BackgroundService` and check that each `ExecuteAsync` loop catches errors per iteration; grep for `BackgroundServiceExceptionBehavior`. In staging, stop the database for 30 seconds while a job runs.
-**Pass:** The API keeps answering; the job logs the error and runs again once the database is back.
-**Fix:** try/catch inside the loop (log, wait, continue), letting `OperationCanceledException` end it on shutdown; `Restart=always` for the service. See `OPS-004`.
+**How to test:** Grep for `: BackgroundService` and check that each `ExecuteAsync` loop catches errors per iteration, including the first call of the iteration: a dequeue or "fetch next item" call above the `try` that guards the processing kills the loop just the same. Grep for `BackgroundServiceExceptionBehavior`. On a Windows service, run `sc qfailure <service>`: no recovery actions means it stays Stopped. In staging, stop the database for 30 seconds while a job runs.
+**Pass:** The API keeps answering; the job logs the error and runs again once the database is back. If a worker does die, the process exits with a non-zero code and the service manager restarts it.
+**Fix:** try/catch around the whole iteration, dequeue included (log, wait, continue), letting `OperationCanceledException` end it on shutdown. After `RunAsync` returns, check each `BackgroundService.ExecuteTask` for `IsFaulted`, log it and exit with code 1. Restart on failure: `Restart=always` on systemd; on Windows `sc failure <service> reset= 86400 actions= restart/10000/restart/30000/restart/60000` plus `sc failureflag <service> 1`. See `DB-001`, `OPS-004`.
 
 ### DOTNET-034 · Debug switches and certificate bypasses left on
 **Severity:** P1
@@ -230,3 +230,17 @@
 **How to test:** `grep -rnE "HasFilter\(.*'[A-Za-z]+'" --include=*.cs`; check each literal equals a current enum value exactly as the converter stores it; insert a duplicate in an integration test.
 **Pass:** Every literal matches, and a test proves the duplicate is refused.
 **Fix:** Build the filter from `nameof(Status.Open)` with the converter's casing, add a CHECK constraint listing the allowed values, and keep the duplicate-insert test.
+
+### DOTNET-045 · A failed log write breaks the business save
+**Severity:** P1
+**Why it breaks:** AI writes audit or rule-hit logs on the same `DbContext` (or LINQ to SQL `DataContext`) the request uses: `db.Logs.Add(log); db.SaveChanges();` inside a try/catch. When the log insert fails (table missing on that server, value too long, no INSERT permission), the entry stays tracked as `Added`, and the request's next `SaveChanges` sends it again and throws. The user's real action fails because of a log line or, behind a swallowing catch, is quietly never saved. A log row saved in the same `SaveChanges` as the business data rolls both back.
+**How to test:** Grep for log and audit entities added to the request's context (`Logs.Add(`, `AuditLogs.Add(`, `InsertOnSubmit(` on log tables). In staging, revoke INSERT on the log table (or rename it) and run the main actions.
+**Pass:** The main action succeeds and its data is saved; the log failure shows up somewhere visible (log file, error tracker, health check).
+**Fix:** Write logs through their own short-lived context (`IDbContextFactory<T>.CreateDbContext()`), or detach the failed entry in the catch (`db.Entry(log).State = EntityState.Detached`). Report log failures to a sink that doesn't depend on that table. See `DOTNET-003`, `UNI-007`.
+
+### DOTNET-046 · Enum fields accept any integer
+**Severity:** P1
+**Why it breaks:** AI registers `JsonStringEnumConverter` so enums travel as names and assumes only those names get in. Its `allowIntegerValues` parameter defaults to `true`, so `"status": 7` or `"day": 9` binds to a value no member has (without the converter, System.Text.Json takes any number anyway). Validators check that the field is present, not that the value exists. The handler's `switch` falls into `default`, a string column stores `"7"` that no filter, report or name-based switch matches, or an int column holds a state the rest of the code never handles.
+**How to test:** For every request DTO with an enum, arrays of enums included, send the largest defined value + 1 and `-1`, as numbers and as strings, then read the row back through a list endpoint. Grep validators for `IsInEnum()` or `Enum.IsDefined` next to each enum property.
+**Pass:** 400 naming the field, and nothing is stored.
+**Fix:** `new JsonStringEnumConverter(allowIntegerValues: false)` globally (`AddJsonOptions` for controllers, `ConfigureHttpJsonOptions` for minimal APIs), plus `IsInEnum()` (`RuleForEach(x => x.Days).IsInEnum()` for arrays) or `[EnumDataType(typeof(Status))]` on every enum field, which also covers values bound from query strings and forms. See `DOTNET-028`, `DOTNET-043`, `UNI-005`.

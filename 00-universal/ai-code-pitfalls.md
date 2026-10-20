@@ -53,10 +53,10 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 
 ### UNI-008 · Tests that test nothing
 **Severity:** P1
-**Why it breaks:** AI writes tests that mock everything or assert `true`. Or the tests never run: a test project outside the solution, a file not listed in an old-style project, `--no-build` running old binaries, tests that skip themselves when a fixture is missing, a branch that is behind main. Gating scripts like `build | grep error && push` exit 0 when they find the error.
-**How to test:** Break the code on purpose (or revert the fix); run the exact command CI and the README use. Compare the test and skip counts before and after the change.
-**Pass:** At least one test fails; the test count goes up with new tests; no critical test skips on the release job; the gate fails on a compile error.
-**Fix:** Assert real outputs; mock only external services; always build before testing; gate on the build's own exit code (`set -euo pipefail`, no pipes into grep); treat skips on release pipelines as failures.
+**Why it breaks:** AI writes tests that mock everything or assert `true`. Or the tests never run: a test project outside the solution, a file not listed in an old-style project, `--no-build` running old binaries, tests that skip themselves when a fixture is missing, a branch that is behind main. Gating scripts like `build | grep error && push` exit 0 when they find the error. Other tests pass only on the author's machine and day: today's date written into an expectation, a local `.env` that points the suite at real external services, the laptop's locale and time zone.
+**How to test:** Break the code on purpose (or revert the fix); run the exact command CI and the README use. Compare the test and skip counts before and after the change. Run the suite in CI on the production OS or image with no local `.env`, under another locale and time zone, and with the clock set to a later date.
+**Pass:** At least one test fails; the test count goes up with new tests; no critical test skips on the release job; the gate fails on a compile error; tests pass with no `.env`, under `TZ=UTC` and another locale; external services are faked unless a test is marked as integration.
+**Fix:** Assert real outputs; mock only external services; always build before testing; gate on the build's own exit code (`set -euo pipefail`, no pipes into grep); treat skips on release pipelines as failures; take dates from an injected clock.
 
 ### UNI-009 · Outdated API usage
 **Severity:** P1
@@ -74,10 +74,10 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 
 ### UNI-011 · Duplicated logic
 **Severity:** P1
-**Why it breaks:** AI rewrites the same helper in multiple files; fixes land in only one. The costly copies are status sets, thresholds, prices and permission lists, "is this item eligible" checks shared by a list and the action behind it, and the same write reached through several paths (main form, bulk import, admin shortcut, retry job, legacy API, direct SQL) where only one runs the validation and side effects. The client also keeps its own copy of server data: hardcoded ID lists, prices computed in the UI, a score the server stored differently.
-**How to test:** Search for similar function names / blocks, repeated literal arrays and numbers (status lists, thresholds, prices) across client, server and SQL. List every code path that writes the core tables and run the same invalid input through each. Check that items a list shows as ready succeed when you run the action.
+**Why it breaks:** AI rewrites the same helper in multiple files; fixes land in only one. The costly copies are status sets, thresholds, prices and permission lists, "is this item eligible" checks shared by a list and the action behind it, and the same write reached through several paths (main form, bulk import, admin shortcut, retry job, legacy API, direct SQL) where only one runs the validation and side effects. The client also keeps its own copy of server data: hardcoded ID lists, prices computed in the UI, a score the server stored differently. UI components get copied too: a new page gets its own version of an existing card, row or modal ("the shared one doesn't render when empty"), which looks different and keeps the original's bugs. Prices also sit in CMS copy, FAQ and legal texts (sales contract, pre-contract information) stored in the database.
+**How to test:** Search for similar function names / blocks, repeated literal arrays and numbers (status lists, thresholds, prices) across client, server and SQL. List every code path that writes the core tables and run the same invalid input through each. Check that items a list shows as ready succeed when you run the action. For each new component, look for an existing one with the same role (`*Row`, `*Card`, `*List`); grep CMS and database content and legal pages for the price and the currency symbol.
 **Pass:** One source of truth.
-**Fix:** Extract a shared module; one domain function per action that every entry point calls; constants defined once on the server and sent to clients; the client displays, the server decides.
+**Fix:** Extract a shared module; one domain function per action that every entry point calls; constants defined once on the server and sent to clients; the client displays, the server decides. Extend the existing component with optional props instead of copying it; render prices in CMS and legal text from the price setting through placeholders.
 
 ### UNI-012 · Check-then-insert race
 **Severity:** P1
@@ -89,15 +89,15 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 ### UNI-013 · "Done" without the effect
 **Severity:** P0
 **Why it breaks:** AI sets the status from intent, not from the result. A job marks a row "sent", "applied" or "approved" when the write was skipped, the HTTP call returned 4xx/5xx (`fetch` doesn't throw), or a stub returned `true` without calling anything. New statuses and error branches never appear on any screen or counter, so the items sit there forever. Whole features ship, compile and pass tests, but the one call that triggers them from the real flow is missing, so they never run once.
-**How to test:** For every terminal status, write a reconciliation query: status = done AND the real effect (row, external record, e-mail log) is missing. Run `SELECT status, COUNT(*) … GROUP BY status` and name the screen, counter and job that handles each value. For every feature in the release, count its success events or rows a few days after launch. Make the downstream call return 400/429/500 and check the status.
+**How to test:** For every terminal status, write a reconciliation query: status = done AND the real effect (row, external record, e-mail log) is missing. Select its candidates by the status itself, not by the event or button that usually sets it, and check that it sees items from every path into that status (UI action, bulk close, admin script, retry job); count per document, not per line. Run `SELECT status, COUNT(*) … GROUP BY status` and name the screen, counter and job that handles each value. For every feature in the release, count its success events or rows a few days after launch. Make the downstream call return 400/429/500 and check the status.
 **Pass:** The reconciliation query returns 0; every status has a screen and an exit; every shipped feature has a non-zero success count or an explained zero; failed calls leave the item retryable.
 **Fix:** Set "done" only from the confirmed result (check `response.ok`, read the record back); give skipped work its own status with a reason; emit one success event per feature and check it after release; alert when rows sit in a non-final status too long.
 
 ### UNI-014 · Save overwrites fields it didn't show
 **Severity:** P0
-**Why it breaks:** AI maps the whole DTO onto the entity. A bulk action, second screen or wizard step sends only some fields, and the missing ones are written as `null`, `""`, `0` or `false` (non-nullable types), erasing real data. Variants: the save handler reads another form's control, an input has no `name` or binding, the target record is taken from "current selection" at save time instead of the ID the form opened with, a button payload hardcodes a flag its label doesn't mention, a bulk action handles only the first selected row. The usual "ignore blanks" fix then makes clearing a field impossible.
-**How to test:** For every edit form, fill every field with distinctive values, save, reload from the server and compare field by field. Send each update endpoint one changed field and diff the full row. Open record A in two tabs, switch to B in one, save in the other. Log each action's payload and compare it with the button label; run bulk actions on 3+ rows.
-**Pass:** Only the fields the user changed change, on the record that was loaded; clearing needs an explicit signal and works; bulk actions affect exactly the selected rows.
+**Why it breaks:** AI maps the whole DTO onto the entity. A bulk action, second screen or wizard step sends only some fields, and the missing ones are written as `null`, `""`, `0` or `false` (non-nullable types), erasing real data. Variants: the save handler reads another form's control, an input has no `name` or binding, the target record is taken from "current selection" at save time instead of the ID the form opened with, a button payload hardcodes a flag its label doesn't mention, a bulk action handles only the first selected row. Command-line and script update commands do it too: an optional flag with a default (`--role`, default `staff`) rewrites that field whenever someone updates another one. The usual "ignore blanks" fix then makes clearing a field impossible.
+**How to test:** For every edit form, fill every field with distinctive values, save, reload from the server and compare field by field. Send each update endpoint one changed field and diff the full row; do the same through every CLI command and admin script. Open record A in two tabs, switch to B in one, save in the other. Log each action's payload and compare it with the button label; run bulk actions on 3+ rows.
+**Pass:** Only the fields the user changed change, on the record that was loaded; clearing needs an explicit signal and works; bulk actions affect exactly the selected rows; optional update flags default to "unchanged".
 **Fix:** PATCH semantics or load-then-merge on the server; nullable DTO fields; carry the record ID in the form; one endpoint per intent; a round-trip test per form.
 
 ### UNI-015 · Safety checks that don't stop anything
@@ -144,10 +144,10 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 
 ### UNI-021 · Multi-step writes that stop halfway
 **Severity:** P1
-**Why it breaks:** AI writes table A, then table B, and swallows the error when B fails, so A exists without B. It sends the SMS or calls the partner API inside the open transaction: a slow service holds locks, a failure rolls back data that was already correct, or the customer is told about a change that was rolled back. A fetcher deletes the source e-mail or file before its copy is saved. A group write checks "already done?" on the first item only.
-**How to test:** Force the second step to fail (bad value, too-long string, DB stopped) and inspect every table; time out the external call; make the save fail after a fetch. For group writes check every member.
-**Pass:** Either all steps land or none, and the user sees the error; external calls happen after commit with a timeout; the source is removed only after the copy is committed.
-**Fix:** One transaction per business action; an outbox (or "commit, then send"); explicit timeouts; move, don't hard-delete, sources; idempotent re-reads by message ID.
+**Why it breaks:** AI writes table A, then table B, and swallows the error when B fails, so A exists without B. It sends the SMS or calls the partner API inside the open transaction: a slow service holds locks, a failure rolls back data that was already correct, or the customer is told about a change that was rolled back. A fetcher deletes the source e-mail or file before its copy is saved. A group write checks "already done?" on the first item only. A sync that downloads several files or pages straight into the live folder or table leaves a half set when one request fails, and every later step that reads it fails too.
+**How to test:** Force the second step to fail (bad value, too-long string, DB stopped) and inspect every table; time out the external call; make the save fail after a fetch. For group writes check every member. Make one of N downloads fail and check the live copy.
+**Pass:** Either all steps land or none, and the user sees the error; external calls happen after commit with a timeout; the source is removed only after the copy is committed; a failed sync leaves the previous complete set live.
+**Fix:** One transaction per business action; an outbox (or "commit, then send"); explicit timeouts; move, don't hard-delete, sources; idempotent re-reads by message ID; download to a staging folder or table and swap it in only when every part has arrived and parses.
 
 ### UNI-022 · Shadow tables: the code writes the dead copy
 **Severity:** P1
@@ -179,10 +179,10 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 
 ### UNI-026 · Dates shift by the server's time zone
 **Severity:** P1
-**Why it breaks:** The API sends a local date-time without a zone; the admin form runs it through `new Date()` and `toISOString()`, so a release time moves by the UTC offset, a "to" filter ends at midnight and drops the last day, or a date saved near midnight lands on the previous day.
-**How to test:** Save 23:30 local time, reload; filter a report "from 1st to 31st" and check that the 31st is included.
-**Pass:** Times round-trip unchanged; date ranges include the whole last day.
-**Fix:** Send zones explicitly (ISO with offset) or treat zone-less values as strings; build ranges as `< next day`. See `OPS-008`.
+**Why it breaks:** The API sends a local date-time without a zone; the admin form runs it through `new Date()` and `toISOString()`, so a release time moves by the UTC offset, a "to" filter ends at midnight and drops the last day, or a date saved near midnight lands on the previous day. Daily and monthly report tables group timestamps stored in UTC by their UTC date (`CreatedAt.Date`, `DATE(created_at)`), so sales after local midnight land on the previous day and don't match the payment provider's or the bank's daily figures.
+**How to test:** Save 23:30 local time, reload; filter a report "from 1st to 31st" and check that the 31st is included. Create an order at 00:30 local time and check which day each report puts it on.
+**Pass:** Times round-trip unchanged; date ranges include the whole last day; reports put every record on its local business day.
+**Fix:** Send zones explicitly (ISO with offset) or treat zone-less values as strings; build ranges as `< next day`; convert to the business time zone before grouping (`AT TIME ZONE`). See `OPS-008`.
 
 ### UNI-027 · Signed over different values than the ones sent
 **Severity:** P1
@@ -263,10 +263,10 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 
 ### UNI-038 · Queued items never re-checked after the data is fixed
 **Severity:** P1
-**Why it breaks:** An automatic match or approval runs once, when the item arrives. It fails because a price, mapping or master record is wrong; someone fixes the data, but the items already waiting keep their old result and staff approve them one by one.
-**How to test:** Queue an item that fails on wrong master data, fix the data, and watch the item.
-**Pass:** Waiting items are re-evaluated (automatically, or with one "re-check" action) and finished items stay unchanged.
-**Fix:** Re-run the decision for pending items when the data they depend on changes, or on a schedule; keep the decision a pure function of its inputs so it can be re-run safely.
+**Why it breaks:** An automatic match or approval runs once, when the item arrives. It fails because a price, mapping or master record is wrong; someone fixes the data, but the items already waiting keep their old result and staff approve them one by one. The same happens after a code fix: items a wrong rule skipped were recorded as processed, so no job looks at them again.
+**How to test:** Queue an item that fails on wrong master data, fix the data, and watch the item. After fixing a skip, queue or match rule, run the corrected rule read-only over past items and count those whose decision changes.
+**Pass:** Waiting items are re-evaluated (automatically, or with one "re-check" action) and finished items stay unchanged; after a rule fix, the items whose decision changed are re-run (a re-check job or a reviewed data fix) until that count is zero.
+**Fix:** Re-run the decision for pending items when the data they depend on changes, or on a schedule; keep the decision a pure function of its inputs so it can be re-run safely. See `UNI-044`.
 
 ### UNI-039 · Items sent to manual review with no reason
 **Severity:** P1
@@ -277,10 +277,10 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 
 ### UNI-040 · Items lost between stages
 **Severity:** P1
-**Why it breaks:** A pipeline (upload, read, match, approve, export) is built as separate steps, each looking only at its own table. Items that fail between two steps vanish: users upload a batch and see fewer items than they sent, or approved items never reach the export.
-**How to test:** For one day, count the items leaving each stage and entering the next.
-**Pass:** Out of stage A = into stage B + listed exclusions with reasons, and each upload shows those counts.
-**Fix:** One status per item with allowed transitions, a daily reconciliation count with an alert, and a per-upload summary (received, read, grouped, duplicate, rejected). See `QA-017`, `UNI-013`.
+**Why it breaks:** A pipeline (upload, read, match, approve, export) is built as separate steps, each looking only at its own table. Items that fail between two steps vanish: users upload a batch and see fewer items than they sent, or approved items never reach the export. When the export file is built in the browser, nothing is exported unless someone opens the page and clicks, and the server has no record of what left.
+**How to test:** For one day, count the items leaving each stage and entering the next. Check where the export file is built and what the server stores about each export.
+**Pass:** Out of stage A = into stage B + listed exclusions with reasons, and each upload shows those counts; the server builds every export and records which items it contained.
+**Fix:** One status per item with allowed transitions, a daily reconciliation count with an alert, and a per-upload summary (received, read, grouped, duplicate, rejected); build export files on the server and mark items exported in the same step. See `QA-017`, `UNI-013`.
 
 ### UNI-041 · Prices that change on a date
 **Severity:** P1
@@ -288,3 +288,94 @@ Bugs that AI coding tools produce again and again, regardless of stack.
 **How to test:** Price a service before and after the change date; add two active rows for the same item.
 **Pass:** Each service uses the price valid on its date, and overlapping active prices are refused when saved.
 **Fix:** Valid-from and valid-to on every price row, a check against overlapping periods, and lookups by service date. See `INV-006`.
+
+### UNI-042 · A missing tenant means "every tenant"
+**Severity:** P0
+**Why it breaks:** AI adds team, branch or tenant isolation to an app that already has data. To keep old rows visible it writes `WHERE tenant_id = @t OR tenant_id IS NULL`; single-record checks treat "the record has no tenant" as "mine"; the filter is skipped when the user's own tenant is empty (`if (user.tenantId) q = q.where(...)`, a scope helper that returns `null` for "no filter"). Every unassigned record is then visible to every tenant, and a user created without a tenant sees everything.
+**How to test:** Create a record with no tenant and a user with no tenant. As a normal user of tenant A, open the list, search, export, counters and the record by ID (view, download, approve, delete); repeat as the tenant-less user. Grep tenant filters for `IS NULL`, `?? true`, `|| !`, and early returns in the scope helper.
+**Pass:** Unassigned records are visible only to an explicit all-tenants role; a user with no tenant sees nothing (or can't log in); "no filter" is reachable only through a named all-tenants permission.
+**Fix:** Backfill the tenant on old rows (from the creator), then make the column NOT NULL; strict equality in one shared query filter (EF global query filter, RLS policy, repository base class); "all tenants" as a named permission. See `UNI-004`, `AUTH-011`.
+
+### UNI-043 · A field that changes the result is pre-filled from the last record
+**Severity:** P0
+**Why it breaks:** To save typing, AI remembers the last value per user, template, method or customer and pre-fills the next form, including fields that change the outcome: origin (import or domestic), tax category, currency, customer or patient type, shipping zone, the rule set a record is judged by. The user confirms a busy screen without noticing, and the record is priced, judged or reported by another record's rule. A note saying "carried over from the last one" doesn't prevent it.
+**How to test:** List every remembered, defaulted or copied field (`localStorage`, "last used" columns, copy-from-previous actions). For each, ask whether a different value would change a price, a limit, a decision or a legal text. Save record A with value X, then open the form for a record of another kind.
+**Pass:** Fields that change the result start empty and are required on every record, unless they come from the record's own source data; only true constants (equipment settings, units of one method) carry over, marked as carried over.
+**Fix:** A short, reviewed list of fields that may carry over; an empty required select ("Choose…") for everything else; store where each value came from (typed, carried over, imported). See `UNI-016`.
+
+### UNI-044 · A parser or rule fix never reaches data that was already imported
+**Severity:** P1
+**Why it breaks:** AI makes an import or sync skip sources it has already seen: a content hash, an ETag or `Last-Modified`, an "already imported" row. Later a commit fixes the parser or the rule that turns the source into rows. The source hasn't changed, so the job skips it, and production keeps the rows the buggy version wrote. Tests run on fresh fixtures, so they pass.
+**How to test:** For each import or sync with change detection, read what the skip key contains. In staging, import a source, deploy a parser change that should alter its rows, run the job with the source unchanged and diff the stored rows.
+**Pass:** The skip key includes a parser or rule version, and bumping it re-processes every affected source on the next run.
+**Fix:** Store the key as content hash plus parser version (`sha256:…:v7`); bump the version with every parsing or mapping change; rebuild affected sources as a deploy step and report how many rows changed. See `QA-017`, `UNI-038`.
+
+### UNI-045 · A record-level fact guessed again on every row
+**Severity:** P1
+**Why it breaks:** A fact that belongs to the whole record (the invoice's customer or currency, the order's country, a lab sample's product) is resolved inside the per-line loop from each line's own text, often by fuzzy matching. Lines of one record attach to different parents or are checked against different rule sets, and each line looks plausible on its own, so nobody notices.
+**How to test:** For records with many lines, count the distinct resolved parents per record (`GROUP BY record_id HAVING COUNT(DISTINCT parent_id) > 1`). Feed a name that fuzzy-matches several candidates, and a record whose lines mention different parents.
+**Pass:** One value per record, resolved once, shown on screen and editable; an ambiguous value stops the record with a reason.
+**Fix:** Resolve the value once before the loop, store it on the record and pass it to each line; lines may narrow it, never replace it. See `UNI-016`, `UNI-020`.
+
+### UNI-046 · Admin totals from the loaded page, exports from another query
+**Severity:** P1
+**Why it breaks:** AI computes summary cards (revenue, pending, refunds) by adding up the rows the list just fetched, which is the current page of 10 or 20, next to a "total orders" number the server counted over everything, so the figures don't add up. Exports get their own query: the date boxes filter the PDF or Excel file but not the list, search is trimmed in one and not the other, a tab maps to a different status. Daily tables are built from the days one table has rows (sign-ups) and look the other one up (sales), so a day with sales but no sign-ups disappears.
+**How to test:** With more than one page of rows, compare each card with a database `SUM` / `COUNT`, then go to page 2: the cards must not change. Set each filter, export, and compare the file's row count with the list's total. Create a sale on a day with no new user and look for that day in every daily table.
+**Pass:** Cards are server-side totals over the whole filtered set; the list and the export return the same rows for the same filters; every day with activity appears.
+**Fix:** One filter function shared by list, totals and export, aggregated on the server; daily tables built from the union of days (or a calendar table) in the business time zone. See `UNI-036`, `UNI-037`, `UNI-026`.
+
+### UNI-047 · A capped list filtered after the cap
+**Severity:** P2
+**Why it breaks:** A list helper written for one screen sorts the rows and keeps the first N ("show 30, oldest first"). A digest, alert or report reuses it and filters afterwards (last 7 days, unanswered, this user). Once enough old rows pile up, recent ones never get past the cap, so the digest goes quiet while the problem grows.
+**How to test:** Seed more than N old rows that sort first, plus one new row the filter should keep, and run every digest, alert and export that reuses a screen's query or helper. Grep for filters applied after `.slice(0, n)`, `.Take(n)`, `[:n]` or a `LIMIT` subquery.
+**Pass:** The new row appears, because filters run before the limit.
+**Fix:** Filter, then sort, then limit, in one query; the cap is a parameter only the screen passes; show "N more" instead of cutting silently. See `UNI-010`.
+
+### UNI-048 · Formatted text that changes with the server's locale data
+**Severity:** P2
+**Why it breaks:** AI formats dates, numbers and money with `toLocaleString(locale)`, `Intl.DateTimeFormat`, `ToString("d", culture)` or `String.format(Locale, …)` and puts the result in messages, file names, keys or test expectations. The output comes from the runtime's ICU / CLDR data, not from the code: separators differ between a laptop and the server, an image with partial ICU data falls back to English, newer ICU and JDK releases put a narrow no-break space (U+202F) before AM/PM, and .NET in globalization-invariant mode (the default in Alpine and chiseled .NET images, which ship without ICU) ignores the culture or throws `CultureNotFoundException`. Tests pass locally and fail in CI, and anything that parses the text back breaks.
+**How to test:** Grep server code for `toLocale`, `Intl.`, `new CultureInfo(`, `ToString("d"` / `"C"` / `"N"`, `ofLocalizedDate` and `strftime` with `%x` or `%c`. Run those paths and their tests in the production image and compare the output with a dev machine. Check `InvariantGlobalization` and `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT`, and print `process.versions.icu` in Node.
+**Pass:** Text that machines read or tests compare uses an explicit pattern with fixed separators, or ISO 8601; user-facing formatting gives the same output in the production image as in the tests.
+**Fix:** Build machine-read strings from parts (`formatToParts`, or `InvariantCulture` with a custom format string); pass the time zone explicitly; install ICU in the image (or use an `-extra` image) when the app formats for users; run the tests in the production image. See `QA-012`, `UNI-026`, `REACT-008`.
+
+### UNI-049 · `"false"` read as true
+**Severity:** P1
+**Why it breaks:** AI converts config, import and query values with `bool(x)` (Python), `Boolean(x)` or `!!x` (JS), `z.coerce.boolean()`, or `if (process.env.FLAG)`. Any non-empty string is true, so `"false"`, `"0"`, `"no"` and `"off"` from a hand-written JSON file, a CSV column, an env var or a query string turn the flag on. A feature meant to be off ships on, a "lower is better" setting flips direction, and `?archived=false` returns archived rows. In Python `True` is also the integer 1, so a boolean passes an `isinstance(v, int)` check.
+**How to test:** Grep for `bool(`, `Boolean(`, `!!`, `z.coerce.boolean`, `if os.environ.get(` and `if (process.env.` applied to values from files, env, CSV or requests. Feed `"false"`, `"False"`, `"0"`, `""` and a real `false` to each such field and read back what was stored or applied.
+**Pass:** Only real booleans or an explicit list (`true`/`false`, `1`/`0`) are accepted; anything else is rejected with the field name; numeric fields reject booleans.
+**Fix:** One parse function with an allow-list that raises on unknown values; strict schema types (`z.stringbool()` in Zod 4, pydantic `StrictBool`); check `isinstance(v, bool)` before `isinstance(v, int)`. See `UNI-005`, `ENV-005`.
+
+### UNI-050 · Domain allow and block lists that compare the typed host
+**Severity:** P1
+**Why it breaks:** AI checks a user-supplied link against a list (blocked services, allowed redirect or webhook domains, "only our CDN") with `host == x || host.endsWith("." + x)` on the raw string, or finds the host with its own regex. The HTTP client connects to the normalized host, so variants slip through: a trailing dot (`example.com.`), full-width letters or an ideographic full stop (`ｅｘａｍｐｌｅ.com`, `example。com`), an invisible character (U+200B, U+FEFF) before the scheme, a `://` found in the query string instead of at the start, `example.com@evil.test`, and the same service's short-link or CDN domain that isn't on the list. In .NET, `Uri.Host` can keep Unicode characters while the connection uses the ASCII `Uri.IdnHost`.
+**How to test:** Feed the check `https://EXAMPLE.com.`, `https://ｅｘａｍｐｌｅ.com/`, `https://example。com/`, `​https://example.com`, `evil.test/x?u=https://example.com`, `https://notexample.com`, `https://example.com.evil.test` and `https://example.com@evil.test`. Log the host the check saw next to the host the client connected to.
+**Pass:** Every variant gets the same decision as the plain domain, made on the host the client will actually connect to.
+**Fix:** Strip Unicode format characters, parse once with a real URL parser (`new URL()`, `Uri.IdnHost`, `urllib.parse` plus `idna.encode(host, uts46=True)`), lowercase, drop the trailing dot, compare whole labels, and hand that same parsed URL to the client; list every domain of a blocked service. See `SEC-013`, `AUTH-005`, `JS-006`.
+
+### UNI-051 · A free-text field used as a grouping key
+**Severity:** P2
+**Why it breaks:** AI makes "season", "term", "category" or "department" a text box because it's quick, and reports, charts and filters then match it exactly. `2026 Fall`, `2026 fall`, `2026  Fall` and a typo become four groups. A record saved with a typo silently drops out of the report and the trend chart, and fixing it later means editing rows one by one.
+**How to test:** Find text inputs whose value is later used in `GROUP BY`, `.GroupBy`, an equality filter or a chart series. Enter the same value with different case, extra spaces and one typo, then open the reports. On production compare `COUNT(DISTINCT field)` with `COUNT(DISTINCT LOWER(TRIM(field)))`.
+**Pass:** The value is picked from a list or a reference ID (free entries are offered as suggestions of existing values); an admin can rename or merge a value in one action; reports show every record.
+**Fix:** A structured picker (e.g. year + season) or a reference table with an ID; normalize on write; suggest values already in use; an admin rename or merge that moves all rows. See `UNI-020`, `QA-022`.
+
+### UNI-052 · Rules that apply to everyone or can never fire
+**Severity:** P1
+**Why it breaks:** AI builds a rule engine (restrictions, discounts, routing, notifications) where an empty targeting field means "any", so a rule saved without a customer or plan applies to every customer. A rule tied to an input the engine doesn't have at that step never matches, and nothing errors: a product rule evaluated before a product is chosen, a required-field rule on a step with no form. Rules with equal priority run in whatever order the database returns, and a "test this rule" button answers "not blocked" when the evaluation itself threw.
+**How to test:** Save a rule with every scope field empty. For each step, check that the engine actually passes every input the rules there depend on. Create two rules with equal priority and evaluate them repeatedly. Make the evaluation throw inside the test endpoint.
+**Pass:** Scope-less rules are refused or need an explicit "applies to all" flag; rules whose inputs don't exist at their step are refused on save; equal priorities have a fixed tiebreaker; the test endpoint returns an error, never "not blocked"; a health view lists active rules that can't fire.
+**Fix:** A validator on save backed by a per-step table of available inputs; an explicit "all" flag; `ORDER BY priority, id`; a dry-run evaluation that writes nothing. See `UNI-015`.
+
+### UNI-053 · E-mail conversations matched by subject
+**Severity:** P2
+**Why it breaks:** AI groups incoming mail into conversations by subject after stripping "RE:" and "FW:". Different senders writing "Question", "Invoice" or no subject at all end up in one thread, so their messages mix and a reply can reach the wrong person. A reply with an edited subject starts a new thread, months-old threads reopen, and localized prefixes ("AW:", "SV:") aren't stripped.
+**How to test:** Send two unrelated mails with the same subject from different senders, a reply with an edited subject, an empty and a prefix-only subject, and an auto-reply.
+**Pass:** Threads match on the message's own headers (the first `References` ID, then `In-Reply-To`, then `Message-ID`) or the provider's conversation ID; subject matching is only a fallback for mails with no such key, limited to the same sender and a recent window, and never used for empty or prefix-only subjects; auto-replies (`Auto-Submitted` header) don't reopen closed threads.
+**Fix:** Store a thread key per message when it is fetched, match on it, and guard the subject fallback as above. See `UNI-020`.
+
+### UNI-054 · Decisions read from human-readable text
+**Severity:** P2
+**Why it breaks:** AI writes a date or reason into a note ("valid until 31.03.2025", "temporary approval"), and another module later regex-parses that note to decide something. It also branches on exception message text (`"duplicate" in str(e)`, `ex.Message.Contains("timeout")`). Someone rewords or translates the note, or a library changes its message, and the decision changes silently.
+**How to test:** Grep decision code for regexes and `startswith` / `includes` / `Contains` / `in str(e)` applied to note, description, label or message fields. Reword one note and change one message, then rerun the tests.
+**Pass:** Decisions read typed columns or error types and codes; notes and messages are output only.
+**Fix:** Parse once at import into typed columns (`valid_until`, `reason_code`); branch on exception types or driver error codes (SQL Server 2627 / 2601, PostgreSQL `23505`) where they exist; a contract test for any text another system must keep producing. See `UNI-039`.

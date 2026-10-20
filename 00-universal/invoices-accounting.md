@@ -18,10 +18,10 @@ Only if the app issues, reads or matches invoices, or exports entries to an acco
 
 ### INV-003 · Documents already in the ledger are exported again
 **Severity:** P0
-**Why it breaks:** "Already posted" comes from the app's own status table, not from the accounting system. Documents the accountant keyed in by hand before the automation started, or through another channel, are offered again and posted twice; a second export of the same batch does the same.
-**How to test:** Key one document into the accounting system by hand, then run the export; export the same batch twice.
-**Pass:** Both are refused or flagged before download, with the reason.
-**Fix:** An idempotency key per document (issuer tax ID + number + date) checked against what the accounting system already holds (import its list, or query it); mark items exported in the same transaction that builds the file. See `UNI-020`.
+**Why it breaks:** "Already posted" comes from the app's own status table, not from the accounting system. Documents the accountant keyed in by hand before the automation started, or through another channel, are offered again and posted twice; a second export of the same batch does the same. The opposite also happens: the check matches on the number alone, so a valid document from another issuer with the same number counts as "already posted" and goes nowhere, neither queued nor exported. When the key is fixed, the fix often reaches only one of the several gates that ask the same question.
+**How to test:** Key one document into the accounting system by hand, then run the export; export the same batch twice. Also take two documents with the same number from different issuers, one already posted.
+**Pass:** The hand-keyed document and the second export are refused or flagged before download, with the reason; the other issuer's document is exported and never shown as "already posted".
+**Fix:** An idempotency key per document (issuer tax ID + number + date) checked against what the accounting system already holds (import its list, or query it); mark items exported in the same transaction that builds the file. Every gate that asks "already posted?" (at import, when queueing, at export, in the reconciliation monitor) calls one function with that key; grep for the number column to find them all. See `UNI-020`, `UNI-011`.
 
 ### INV-004 · Exported entries use account codes the accounting system rejects
 **Severity:** P1

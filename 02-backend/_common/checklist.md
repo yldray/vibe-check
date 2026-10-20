@@ -9,7 +9,7 @@
 - [ ] `BE-007` **P1** Idempotent payment / webhook handling
 - [ ] `BE-008` **P1** Webhook signatures verified
 - [ ] `BE-009` **P1** Timeouts on every outbound HTTP call
-- [ ] `BE-010` **P1** Structured logging with request IDs; no personal data in logs
+- [ ] `BE-010` **P1** Structured logging with request IDs; no personal data and no secrets in logs. HTTP client logging and tracing record each outbound URL (so do proxies and the receiving server), so a key or token in the query string (`access_token=`, `key=`, `sig=`) ends up in log files and error trackers (.NET `IHttpClientFactory` logs the full URL at Information before .NET 9, or when `System.Net.Http.DisableUriRedaction` is set); send credentials in headers, and redact or remove the client's loggers (`RedactLoggedHeaders`, `RemoveAllLoggers()`). Test: grep outbound calls for tokens appended to URLs and search production logs for `access_token=`, `key=` and `token=`
 - [ ] `BE-011` **P1** Health check endpoint
 - [ ] `BE-012` **P1** Migrations run cleanly on an empty DB
 - [ ] `BE-013` **P2** API docs (OpenAPI)

@@ -33,9 +33,9 @@ Login, sessions, password reset and one-time codes: where AI-written auth breaks
 ### AUTH-005 · Open redirect after login
 **Severity:** P1
 **Why it breaks:** AI sends the user to `?next=` or `returnUrl` as-is after login, so a phishing link can bounce users to another site.
-**How to test:** Open `/login?next=https://example.org` and log in.
+**How to test:** Open `/login?next=https://example.org` and log in. Also try `//example.org`, `/\example.org`, `/%09/example.org` (browsers drop the tab and read `//`), `/.//example.org` and `javascript:alert(1)`.
 **Pass:** You stay on your own domain.
-**Fix:** Accept only relative paths, or an allow-list of URLs.
+**Fix:** Accept only relative paths, or an allow-list of URLs. Reject control characters and backslashes, parse with `new URL(value, origin)`, require the result's origin to equal yours and redirect to the parsed absolute URL, not the raw string. Use one validator everywhere the value is read or passed on (login, sign-up, code screen, social login).
 
 ### AUTH-006 · Login and reset reveal who has an account
 **Severity:** P2
@@ -47,15 +47,14 @@ Login, sessions, password reset and one-time codes: where AI-written auth breaks
 ### AUTH-009 · Backdoors left in the production login
 **Severity:** P0
 **Why it breaks:** To test login without an e-mail provider, or to get App Review past an OTP screen, AI adds a shortcut: a master code that works for any account, the code returned in the API response, a "forgot password" endpoint that sets a fixed password with no proof, or seed/demo accounts with a shared or guessable password. A config flag or nothing guards it, and it reaches production. Anyone who knows an e-mail address can log in as that user.
-**How to test:** Request a code for an address you don't own and read the full response body. Grep code, config and seeds for `devCode`, `debugCode`, `bypass`, `fixed`, `master`, literal 4–6 digit codes and literal passwords. Call every reset endpoint without a valid code. List accounts in the production DB created by a seed, a script or the agent, and try the seed/README passwords on the live login.
-**Pass:** No response contains a code; reset needs proof of ownership; no seed or default account can log in; a reviewer shortcut (if any) is one non-admin account, rate-limited, time-boxed, stored only in server settings, and off after approval.
+**How to test:** Request a code for an address you don't own and read the full response body. Grep code, config and seeds for `devCode`, `debugCode`, `bypass`, `fixed`, `master`, literal 4–6 digit codes and literal passwords. Call every reset endpoint without a valid code. List accounts in the production DB created by a seed, a script or the agent, and try the seed/README passwords on the live login. Grep account-creation, invite and reset code for passwords built from record fields (`$"{code}-{year}"`, name plus year, the company or event code) when a form field is left blank, and log in to an account created with that field empty. If the app has a setup mode (no users yet, so a default admin works), create the first real user while another tab is logged in through setup mode, then use that tab.
+**Pass:** No response contains a code; reset needs proof of ownership; no seed or default account can log in; no password can be derived from public fields; a setup-mode session ends on its next request once a real user exists; a reviewer shortcut (if any) is one non-admin account, rate-limited, time-boxed, stored only in server settings, and off after approval.
 **Fix:** Delete the shortcut or tie it to development builds only; refuse to start in production if a bypass setting is present; create the first admin with a one-time random password or invite link; for store review see `APPSTORE-002`.
 
 ### AUTH-010 · Account found by an unnormalized or shared phone or e-mail
 **Severity:** P0
 **Why it breaks:** AI writes `u.Phone == input` or `u.Email == input` with `FirstOrDefault()`. Stored values came from imports in other formats (spaces, dashes, country code) or other case, so real users can't reset their password. After normalizing, several accounts share one value (family members), and the reset or login lands on someone else's account. Legacy data often already holds several active rows per e-mail; `FirstOrDefault()` without `OrderBy` returns the oldest, so a subscriber logs into an old account with no subscription and hits the paywall. A flow that "identifies" a caller with two knowable facts and then writes their new phone or e-mail into the record lets anyone attach their channel to another person's account.
-**How to test:** Try reset and login with the same phone in five formats and the same e-mail in different case. Count stored values shared by 2+ accounts after normalization. With a second test phone, identify as another test customer using only knowable facts and check whether your number is now on their record.
-For an e-mail with 2+ rows, run login, one-time-code send and verify, social login and reset: all must pick the same row by one documented rule.
+**How to test:** Try reset and login with the same phone in five formats and the same e-mail in different case. Count stored values shared by 2+ accounts after normalization. With a second test phone, identify as another test customer using only knowable facts and check whether your number is now on their record. For an e-mail with 2+ rows, run login, one-time-code send and verify, social login and reset: all must pick the same row by one documented rule.
 **Pass:** All formats find the same single account; a shared value is refused with a support path; a new contact channel is bound only after a code sent to the channel already on file.
 **Fix:** Normalize on write and on lookup (digits only / E.164; lowercase e-mail), backfill, add a unique index where the field must be unique, treat "more than one match" as an error, and verify the existing channel before changing it.
 
@@ -86,6 +85,34 @@ For an e-mail with 2+ rows, run login, one-time-code send and verify, social log
 **How to test:** In a private window, open the root URL and every marketing link; play a free preview to the end, seek and turn on captions; watch the network tab for 401s.
 **Pass:** Visitors stay on public pages; requests that need a user are skipped for visitors, and only an action that needs an account asks them to log in.
 **Fix:** Redirect on 401 only for requests the user started on a protected page; don't call user endpoints for anonymous visitors; make the root URL the public home.
+
+### AUTH-016 · Adding an existing user to a team resets their password
+**Severity:** P0
+**Why it breaks:** AI writes "add member", "invite admin" and "create workspace with admin e-mail" as an upsert: find the user by e-mail or create one, then set a password (typed in the form, or a default) and mark the account active so the new admin can log in at once. When the e-mail already belongs to an account, its password is replaced by one the inviter chose or can predict. An admin of one workspace types the e-mail of an admin of another workspace, or of the platform owner, and signs in as them everywhere.
+**How to test:** As admin of workspace A, add or invite an e-mail that already exists (a member of workspace B, a platform admin, the owner), once with a password you choose and once with the field blank. Try logging in as that account with your password and with the default; check its old password still works. Grep invite, add-member, promote and create-workspace handlers for writes to the password hash, `IsActive` or `EmailConfirmed` on a user that was found rather than created.
+**Pass:** Another person's action never changes an existing account's password, e-mail or 2FA; the account gets a membership and a "you were added" notice and keeps its own password. Credentials are set only for accounts created in the same request.
+**Fix:** Separate "create user" from "attach existing user"; set credentials only for an account that has none, through a one-time set-password link rather than a password the inviter picks; refuse credential writes to a user of a higher tier. See `AUTH-009`, `AUTH-011`.
+
+### AUTH-017 · Social sign-in that accepts another app's token or merges accounts by e-mail
+**Severity:** P0
+**Why it breaks:** For one-tap or native Google (or Apple, Microsoft) sign-in, the client sends an ID token and AI checks only its signature and expiry, not `aud`: a token issued to any other app that uses the same provider logs in. AI then links the identity to the existing account with the same e-mail. A Google account can carry an e-mail address that isn't Gmail, verified once, perhaps by an earlier owner of that address; Google vouches for ownership only for `@gmail.com` addresses and Workspace accounts (`hd` claim). Whoever sets up such an account gets into the real user's account. Two quieter failures: Google blocks its sign-in inside embedded webviews and many in-app browsers (where ad traffic lands), so the button errors there; `Cross-Origin-Opener-Policy: same-origin` cuts the popup's link to the page, so the popup opens and nothing happens.
+**How to test:** Send an ID token issued for another client ID; grep the validator for the audience setting and what happens when it's empty. Create a Google account on a non-Gmail address that matches an existing account's e-mail and sign in with Google. Open the login page from an in-app browser (a link opened inside Instagram or Facebook). Read the COOP header on the login page.
+**Pass:** Only your own client IDs are accepted, and an empty client-ID setting fails closed. An existing account is linked automatically only when the provider vouches for that address; otherwise the user proves the mailbox first. In-app browsers get another way to log in; the popup completes.
+**Fix:** Verify `iss`, `aud` (your web, iOS and Android client IDs), `exp` and `email_verified`; store and match on the provider's `sub`, not the e-mail; link by e-mail only when the provider is authoritative for it (Google: `@gmail.com` or `hd` present) or after a code sent to the e-mail on file; `same-origin-allow-popups` on pages that open sign-in popups. See `AUTH-001`, `AUTH-008`, `AUTH-010`.
+
+### AUTH-018 · Resending a login code kills the one already on its way
+**Severity:** P1
+**Why it breaks:** AI makes a fresh code on every "resend" and overwrites the old one. E-mail and SMS often arrive minutes late and out of order, so the user types the first code that arrives and gets "wrong code". A few tries later the attempt limit locks them out.
+**How to test:** Request a code, press resend twice, then enter the first code that arrives. Slow delivery down (a queue delay, a slow SMTP relay) and count failed attempts until lockout.
+**Pass:** Any code sent inside the validity window works once, or resend sends the same code with a later expiry. Used and expired codes are refused, and the per-account attempt limit still applies.
+**Fix:** Keep the last few unexpired codes (stored hashed), accept any of them once and delete them all on success; or, while a code is valid, resend the same one and extend its expiry. Show when the last code was sent. Count attempts per account, not per code. See `AUTH-002`, `AUTH-015`.
+
+### AUTH-019 · Trusting who an incoming e-mail says it is from
+**Severity:** P1
+**Why it breaks:** Reply-by-e-mail features (ticket replies, approvals, e-mail commands, "answered by staff" stats) take the sender from `From:`, which anyone can write. The "verification" AI adds is often just as forgeable: an internal header that one mail provider strips from outside mail but another path (forwarding, a POP3 or IMAP mailbox at another host) lets through; an `Authentication-Results` line the sender added lower in the headers; a substring regex for `dkim=pass header.d=yourco.com` that also matches a quoted envelope address like `"x; dkim=pass header.d=yourco.com"@evil.example`.
+**How to test:** Through each mailbox the app reads (provider API, POP3, IMAP), send from an outside account four times: with a colleague's address in `From:`, with a forged internal header, with a fake `Authentication-Results` header, and with that quoted address as the envelope sender.
+**Pass:** All four are treated as unverified, and none triggers an action.
+**Fix:** Trust only the topmost `Authentication-Results`, the one your own receiving server added (check its authserv-id). Parse it by tokens as RFC 8601 describes, with comments removed, and treat quoted strings or escapes as unverified. Require `dmarc=pass`, or an SPF or DKIM pass for a domain aligned with the `From:` domain. Trust a provider's internal headers only on the path where that provider strips them. Store a verdict per message, start in a monitor mode that logs would-be rejections, and never act on `From:` alone.
 
 ## Before launch
 

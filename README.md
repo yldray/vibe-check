@@ -87,12 +87,13 @@ Details, times and how to run it yourself: [`benchmark/`](benchmark/).
 
 | Folder | What you get |
 |---|---|
-| [`00-universal`](00-universal/) | Checks for every project: security, auth flows, payments, invoices & accounting, LLM features and chat flows, cloud & infra, jobs & deploys, env, performance, a11y, privacy, QA / UX, AI pitfalls |
+| [`00-universal`](00-universal/) | Checks for every project: security, auth flows, payments, invoices & accounting, LLM features, chat flows and coding agents, cloud & infra, jobs & deploys, env, performance, a11y, privacy, QA / UX, AI pitfalls |
 | [`01-frontend`](01-frontend/) | React, Angular, Vue, vanilla JS |
 | [`02-backend`](02-backend/) | .NET, Java Spring, Node, Python, Supabase, Firebase |
 | [`03-mobile`](03-mobile/) | Android, iOS, React Native / Expo, Flutter |
-| [`04-release`](04-release/) | Google Play, App Store and web deploy rules |
+| [`04-release`](04-release/) | Google Play, App Store, web deploy and Windows server / IIS rules |
 | [`05-payments`](05-payments/) | Payment providers: PayTR, iyzico, Stripe |
+| [`06-database`](06-database/) | Any database: reconnects after a drop, startup order, retries, pools, timeouts, health probes, data-fix scripts; SQLite |
 | [`agents`](agents/) · [`skills`](skills/vibe-check/) | Drop-in files for AI coding agents, and the Claude Code plugin skill |
 | [`templates`](templates/) | Test case and bug report templates |
 | [`examples`](examples/) · [`benchmark`](benchmark/) | Vulnerable test projects and the results of running vibe check on them |
@@ -113,6 +114,8 @@ Every stack folder has the same 4 files:
 | Node · .NET · Java · Python · Supabase · Firebase | ✅ Complete |
 | Expo · Android · iOS · Flutter | ✅ Complete |
 | Payments: PayTR · iyzico · Stripe | ✅ Complete |
+| Database: common checks · SQLite | 🌱 Seeded |
+| Release: Windows server / IIS | 🌱 Seeded |
 
 ## 🤝 Contributing
 

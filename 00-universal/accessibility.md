@@ -5,7 +5,7 @@
 - [ ] `A11Y-003` **P1** Form inputs have labels
 - [ ] `A11Y-004` **P1** Text contrast at least 4.5:1 (3:1 for large text), also for text on images, placeholders and brand-colored buttons. Test: the Lighthouse or axe contrast audit lists no elements
 - [ ] `A11Y-005` **P2** Screen reader tested on main flow (VoiceOver / TalkBack / NVDA)
-- [ ] `A11Y-006` **P2** Respects reduced motion and font scaling
+- [ ] `A11Y-006` **P2** Respects reduced motion and font scaling. Anything that moves on its own for more than 5 seconds (carousel, marquee, animated background) has a visible pause control for everyone, not only under `prefers-reduced-motion` (WCAG 2.2.2). Test: press it and check that every moving element stops: an inline `style="animation: …"` shorthand resets `animation-play-state` to `running` and beats a stylesheet `paused` rule unless that rule is `!important`
 - [ ] `A11Y-007` **P1** Headings go down in order: one `h1`, no skipped levels (`h2` → `h4`). Pick the level by structure and the size with CSS
 - [ ] `A11Y-008` **P1** Videos with speech have captions (`<track kind="captions">`); autoplaying video is muted and can be paused
 - [ ] `A11Y-009` **P1** ARIA only where it's valid: no attributes the element's role doesn't allow (e.g. `aria-label` on a plain `div` or `span`), no `role` or `aria-hidden` that hides real content. Test: Lighthouse and axe report no ARIA errors
