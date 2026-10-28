@@ -157,6 +157,8 @@ Full rules, including how to add a new stack: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 Some checks were inspired by the rule categories of [open-code-review](https://github.com/alibaba/open-code-review) (Apache-2.0). Ideas only; no text was copied.
 
+Some accessibility, layout and mobile checks were inspired by the audit rules of [impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0). Ideas only; no text was copied.
+
 ## 📄 License
 
 MIT
