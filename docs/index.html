@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vibe-check · pre-launch audit for AI-written code</title>
+<meta name="description" content="Ship AI-written code without shipping AI-written bugs. One file tells Claude Code, Cursor or Codex how to audit your app before launch: secrets, auth, payments, store rules and each stack's chronic bugs.">
+<meta property="og:title" content="vibe-check: pre-launch audit for AI-written code">
+<meta property="og:description" content="Your AI audits the code it wrote. Secrets, auth, payments, store rules, each stack's chronic bugs. Free, MIT, plain Markdown.">
+<meta property="og:image" content="https://raw.githubusercontent.com/yldray/vibe-check/main/assets/sample-report.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://yldray.github.io/vibe-check/">
+<style>
+:root{--bg:#f7f6f2;--ink:#1c1b19;--ink2:#5c5a55;--line:#dedbd3;--card:#fffdf8;--accent:#1f7a4d;--bad:#b3261e;--code:#efece4}
+@media (prefers-color-scheme:dark){:root{--bg:#141412;--ink:#ecebe6;--ink2:#a3a199;--line:#2e2d29;--card:#1c1b18;--accent:#4cc38a;--bad:#ff8a80;--code:#23221e}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:56px 20px 80px}
+h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.1;letter-spacing:-.02em;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.6em 0 .6em;letter-spacing:-.01em}
+p{margin:.6em 0}
+.lead{font-size:1.2rem;color:var(--ink2);max-width:40em}
+.kicker{font:600 .8rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+a{color:var(--accent)}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+code{background:var(--code);padding:.1em .35em;border-radius:5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:.6em 0}
+pre code{background:none;padding:0}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin:1.4em 0}
+.btn{display:inline-block;padding:11px 18px;border-radius:999px;text-decoration:none;font-weight:600;border:1px solid var(--line);color:var(--ink);background:var(--card)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+img.shot{width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:1.4em 0;background:var(--card)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card h3{margin:0 0 .3em;font-size:1rem}
+.card p{margin:0;color:var(--ink2);font-size:.95rem}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+td,th{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--ink2)}
+td.id{white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;color:var(--ink2)}
+.verdict{font-weight:700;color:var(--bad)}
+footer{margin-top:4em;color:var(--ink2);font-size:.9rem;border-top:1px solid var(--line);padding-top:1.2em}
+@media (max-width:560px){main{padding-top:36px}td,th{padding:10px 4px}td.id{font-size:.78em}}
+</style>
+</head>
+<body>
+<main>
+  <p class="kicker">Pre-launch audit · free · MIT</p>
+  <h1>Ship AI-written code without shipping AI-written bugs.</h1>
+  <p class="lead">One file tells Claude Code, Cursor or Codex how to audit your app before launch: secrets, auth, payments, store rules and each stack's chronic bugs. Your AI audits the code it wrote and nothing changes until you approve.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/yldray/vibe-check#-30-second-start">Start in 30 seconds</a>
+    <a class="btn" href="https://github.com/yldray/vibe-check">GitHub</a>
+  </div>
+
+  <img class="shot" src="https://raw.githubusercontent.com/yldray/vibe-check/main/assets/sample-report.png" alt="Sample vibe check report: four P0 checks, three FAIL, verdict NOT READY" width="1280" height="640">
+
+  <h2>Set it up once</h2>
+  <p><strong>Claude Code</strong>, in the chat:</p>
+  <pre><code>/plugin marketplace add yldray/vibe-check
+/plugin install vibe-check@vibe-check</code></pre>
+  <p><strong>Cursor, Codex and others</strong>, in your project root:</p>
+  <pre><code>npx vibe-check install</code></pre>
+  <p>Then tell your agent <strong>"Run vibe check"</strong>, or <strong>"quick vibe check"</strong> for P0s only.</p>
+
+  <h2>Bugs it's built to catch</h2>
+  <p>These shipped in real apps built with coding agents. Each one is now a check.</p>
+  <table>
+    <tr><th>What happened</th><th>Check</th></tr>
+    <tr><td>The login code came back in the API response "for testing". Anyone who knew an e-mail could sign in as that user.</td><td class="id">AUTH-009</td></tr>
+    <tr><td>The login rate limit keyed on the reverse proxy's IP, so the whole platform shared one quota. Twenty requests locked everyone out.</td><td class="id">DOTNET-032</td></tr>
+    <tr><td>Two taps on "Generate" sent two requests. The duplicate check ran outside the lock, so the user paid twice.</td><td class="id">PAY-006</td></tr>
+    <tr><td>The deploy went green, but the artifact had dropped the <code>.next</code> folder. The site answered nothing.</td><td class="id">REACT-030</td></tr>
+    <tr><td>A column-rename migration moved the column but not the stored values. Existing profiles became unreadable.</td><td class="id">OPS-001</td></tr>
+    <tr><td>The store build silently fell back to <code>localhost</code> for its API. Nothing worked for real users.</td><td class="id">UNI-018</td></tr>
+  </table>
+
+  <h2>What you get</h2>
+  <div class="grid">
+    <div class="card"><h3>Every stack</h3><p>React, Angular, Vue, .NET, Java, Node, Python, Supabase, Firebase, Android, iOS, Expo, Flutter.</p></div>
+    <div class="card"><h3>Store and legal rules</h3><p>App Store, Google Play, privacy, account deletion, payments with PayTR, iyzico and Stripe.</p></div>
+    <div class="card"><h3>A clear verdict</h3><p>Every check gets an ID, a status and file:line. Any open P0 means <span class="verdict">NOT READY</span>.</p></div>
+    <div class="card"><h3>Read-only and plain text</h3><p>Markdown you can read in two minutes. It never prints a secret value.</p></div>
+  </div>
+
+  <h2>Benchmark</h2>
+  <p>Two intentionally vulnerable projects with 22 planted bugs, one prompt: "quick vibe check". Claude Code found 22/22, Cursor 22/22, Codex 20/22 plus 2 partial. <a href="https://github.com/yldray/vibe-check/tree/main/benchmark">Run it yourself</a>.</p>
+
+  <h2>Block a merge in CI, no LLM needed</h2>
+  <pre><code>- uses: actions/checkout@v5
+- uses: yldray/vibe-check@v1</code></pre>
+  <p>Secrets, <code>.env</code> in git, keys shipped to the client, open CORS and GitHub Actions injection. Locally: <code>npx vibe-check scan</code>.</p>
+
+  <h2>Passed? Show it.</h2>
+  <p>On a 🟢 READY verdict the agent offers a README badge:</p>
+  <p><a href="https://github.com/yldray/vibe-check"><img src="https://img.shields.io/badge/vibe_check-READY-2ea44f" alt="vibe check: READY" height="20"></a></p>
+
+  <footer>
+    vibe-check is MIT-licensed. Found a bug your AI keeps writing? <a href="https://github.com/yldray/vibe-check/issues/new/choose">Add it as a check</a>.
+  </footer>
+</main>
+</body>
+</html>
