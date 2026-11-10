@@ -1,6 +1,6 @@
 {
   "name": "@yldray/vibe-check",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pre-launch audit for AI-written code: drop-in agent rules plus a no-LLM scanner for CI.",
   "type": "module",
   "bin": {
