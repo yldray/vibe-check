@@ -1,0 +1,38 @@
+{
+  "name": "vibe-check",
+  "version": "0.1.0",
+  "description": "Pre-launch audit for AI-written code: drop-in agent rules plus a no-LLM scanner for CI.",
+  "type": "module",
+  "bin": {
+    "vibe-check": "cli/vibe-check.mjs"
+  },
+  "files": [
+    "cli/",
+    "agents/CLAUDE.md",
+    "agents/AGENTS.md",
+    "agents/.cursorrules",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "vibe-coding",
+    "claude-code",
+    "cursor",
+    "codex",
+    "agent-skills",
+    "security",
+    "audit",
+    "pre-launch",
+    "checklist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yldray/vibe-check.git"
+  },
+  "homepage": "https://github.com/yldray/vibe-check#readme",
+  "bugs": "https://github.com/yldray/vibe-check/issues",
+  "license": "MIT"
+}
