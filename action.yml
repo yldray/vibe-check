@@ -1,0 +1,30 @@
+name: vibe-check scan
+description: Deterministic pre-launch checks for AI-written code (secrets, .env in git, client-bundled keys, open CORS, workflow injection). No LLM, no API key.
+author: yldray
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  path:
+    description: Folder to scan (inside the checked-out repository).
+    required: false
+    default: .
+  fail-on-findings:
+    description: Fail the job when a check FAILs (true/false).
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Run vibe-check scan
+      shell: bash
+      env:
+        SCAN_PATH: ${{ inputs.path }}
+        FAIL_ON: ${{ inputs.fail-on-findings }}
+      run: |
+        set -eu
+        extra=""
+        [ "$FAIL_ON" = "false" ] && extra="--no-fail"
+        node "$GITHUB_ACTION_PATH/cli/scan.mjs" "$SCAN_PATH" --github $extra
