@@ -150,6 +150,9 @@ Status values:
 - `NEEDS REVIEW` — you are unsure, or it cannot be verified from the code (real device, store console, live server settings).
 - `N/A` — it does not apply to this project; say why in `Fix`.
 
+Badge: only when the verdict is 🟢 READY, add `Badge for your README:` after the verdict and this line in a code block. In Quick mode use `P0_READY` instead of `READY` and `P0 READY` in the alt text. Never offer it for NOT READY, and don't add it to any file unless the user asks.
+`[![vibe check: READY](https://img.shields.io/badge/vibe_check-READY-2ea44f)](https://github.com/yldray/vibe-check)`
+
 A `NEEDS REVIEW` row becomes `PASS` only when the user confirms it.
 
 ## Step 5 — Feedback
