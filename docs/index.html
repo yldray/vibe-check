@@ -61,7 +61,7 @@ footer{margin-top:4em;color:var(--ink2);font-size:.9rem;border-top:1px solid var
   <pre><code>/plugin marketplace add yldray/vibe-check
 /plugin install vibe-check@vibe-check</code></pre>
   <p><strong>Cursor, Codex and others</strong>, in your project root:</p>
-  <pre><code>npx vibe-check install</code></pre>
+  <pre><code>npx @yldray/vibe-check install</code></pre>
   <p>Then tell your agent <strong>"Run vibe check"</strong>, or <strong>"quick vibe check"</strong> for P0s only.</p>
 
   <h2>Bugs it's built to catch</h2>
@@ -90,7 +90,7 @@ footer{margin-top:4em;color:var(--ink2);font-size:.9rem;border-top:1px solid var
   <h2>Block a merge in CI, no LLM needed</h2>
   <pre><code>- uses: actions/checkout@v5
 - uses: yldray/vibe-check@v1</code></pre>
-  <p>Secrets, <code>.env</code> in git, keys shipped to the client, open CORS and GitHub Actions injection. Locally: <code>npx vibe-check scan</code>.</p>
+  <p>Secrets, <code>.env</code> in git, keys shipped to the client, open CORS and GitHub Actions injection. Locally: <code>npx @yldray/vibe-check scan</code>.</p>
 
   <h2>Passed? Show it.</h2>
   <p>On a 🟢 READY verdict the agent offers a README badge:</p>

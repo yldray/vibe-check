@@ -23,7 +23,7 @@ React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebas
      /plugin marketplace add yldray/vibe-check
      /plugin install vibe-check@vibe-check
      ```
-   - **Cursor, Codex or others:** run `npx vibe-check install` in your project root. It adds `.cursorrules` for Cursor, `AGENTS.md` for Codex and others, or `CLAUDE.md`, and never overwrites a file you already have. Or copy the file from [`agents/`](agents/) yourself.
+   - **Cursor, Codex or others:** run `npx @yldray/vibe-check install` in your project root. It adds `.cursorrules` for Cursor, `AGENTS.md` for Codex and others, or `CLAUDE.md`, and never overwrites a file you already have. Or copy the file from [`agents/`](agents/) yourself.
 2. Tell your agent: **"Run vibe check"**, or **"quick vibe check"** for P0s only (in our test: ~8 min instead of ~17 for the full audit)
 3. Fix every **P0** before you ship. A P0 marked `NEEDS REVIEW` counts too: confirm it yourself.
 
@@ -73,7 +73,7 @@ jobs:
       - uses: yldray/vibe-check@v1
 ```
 
-Or locally: `npx vibe-check scan`. It prints file names and check IDs, never secret values, and exits 1 on a `FAIL`. The full audit (auth, payments, store rules, each stack's chronic bugs) still needs your agent: "Run vibe check".
+Or locally: `npx @yldray/vibe-check scan`. It prints file names and check IDs, never secret values, and exits 1 on a `FAIL`. The full audit (auth, payments, store rules, each stack's chronic bugs) still needs your agent: "Run vibe check".
 
 ## 🏅 Show it
 

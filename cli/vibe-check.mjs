@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// npx vibe-check <command>
+// npx @yldray/vibe-check <command>
 //
 //   install [--agent=claude|codex|cursor] [--force]
 //       Puts the agent file in the current project so your coding agent knows
@@ -61,9 +61,9 @@ switch (cmd) {
   default:
     console.log(`vibe-check: pre-launch audit for AI-written code
 
-  npx vibe-check install [--agent=claude|codex|cursor] [--force]
+  npx @yldray/vibe-check install [--agent=claude|codex|cursor] [--force]
       Add the agent file, then tell your agent "Run vibe check".
-  npx vibe-check scan [dir] [--json] [--github] [--no-fail]
+  npx @yldray/vibe-check scan [dir] [--json] [--github] [--no-fail]
       Deterministic checks only, no LLM (good for CI).
 
 https://github.com/yldray/vibe-check`)
