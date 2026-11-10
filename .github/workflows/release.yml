@@ -97,3 +97,11 @@ jobs:
             printf '\n## Changes\n\n%s/%s/compare/%s...%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$LAST" "$VERSION" >> notes.md
           fi
           gh release create "$VERSION" "$zip" --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md
+
+      # `uses: yldray/vibe-check@v1` follows the newest v1.x.y release.
+      - name: Move the major tag
+        run: |
+          set -eu
+          major=${VERSION%%.*}
+          git tag -f "$major" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$major"

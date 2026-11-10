@@ -23,7 +23,7 @@ React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebas
      /plugin marketplace add yldray/vibe-check
      /plugin install vibe-check@vibe-check
      ```
-   - **Cursor, Codex or others:** copy one file from [`agents/`](agents/) into your project root: `.cursorrules` for Cursor, `AGENTS.md` for Codex and others. (Claude Code without the plugin: `CLAUDE.md`.)
+   - **Cursor, Codex or others:** run `npx vibe-check install` in your project root. It adds `.cursorrules` for Cursor, `AGENTS.md` for Codex and others, or `CLAUDE.md`, and never overwrites a file you already have. Or copy the file from [`agents/`](agents/) yourself.
 2. Tell your agent: **"Run vibe check"**, or **"quick vibe check"** for P0s only (in our test: ~8 min instead of ~17 for the full audit)
 3. Fix every **P0** before you ship. A P0 marked `NEEDS REVIEW` counts too: confirm it yourself.
 
@@ -32,6 +32,54 @@ No config. Your AI audits the code it wrote.
 **Keep the plugin current:** third-party plugins don't update on their own. Turn it on once: type `/plugin` in the chat → **Marketplaces** → `vibe-check` → **Enable auto-update**. New checks then arrive when a session starts. To update by hand: `/plugin marketplace update vibe-check` in the chat. (The drop-in file always fetches the latest checks.)
 
 The repository also includes a Cursor plugin manifest at [`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json), alongside the shared skill in [`skills/vibe-check/`](skills/vibe-check/).
+
+## 🪲 Bugs it's built to catch
+
+AI-written apps pass their own tests and still break in production. These all shipped in real apps built with coding agents; each one is now a check.
+
+| What happened | Check |
+|---|---|
+| The login code came back in the API response "for testing". Anyone who knew an e-mail could sign in as that user. | `AUTH-009` |
+| The login rate limit keyed on the reverse proxy's IP, so every user on the platform shared one quota. Twenty requests locked everyone out. | `DOTNET-032` · `NODE-007` · `PY-020` |
+| Two taps on "Generate" sent two requests with the same idempotency key. The duplicate check ran outside the lock, so the user paid twice. | `PAY-006` |
+| The deploy went green, but the artifact had dropped the `.next` folder. The site answered nothing. | `REACT-030` · `OPS-015` |
+| A column-rename migration moved the column but not the stored values. Every existing profile became unreadable. | `OPS-001` |
+| The store build had no API URL baked in and silently fell back to `localhost`. Nothing worked for real users. | `UNI-018` |
+
+## 📏 Benchmark
+
+Two intentionally vulnerable projects with **22 planted bugs**, one prompt: "quick vibe check".
+
+| Agent | Found |
+|---|---|
+| Claude Code | 22/22 |
+| Cursor | 22/22 |
+| Codex | 20/22 + 2 partial |
+
+Details, times and how to run it yourself: [`benchmark/`](benchmark/).
+
+## 🤖 Run it in CI
+
+The checks a pattern can decide (secrets, `.env` in git, keys shipped to the client, open CORS, GitHub Actions injection) also run without an LLM, so they can block a merge:
+
+```yaml
+# .github/workflows/vibe-check.yml
+on: [push, pull_request]
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: yldray/vibe-check@v1
+```
+
+Or locally: `npx vibe-check scan`. It prints file names and check IDs, never secret values, and exits 1 on a `FAIL`. The full audit (auth, payments, store rules, each stack's chronic bugs) still needs your agent: "Run vibe check".
+
+## 🏅 Show it
+
+When the verdict is 🟢 READY, the agent offers a badge for your README:
+
+[![vibe check: READY](https://img.shields.io/badge/vibe_check-READY-2ea44f)](https://github.com/yldray/vibe-check)
 
 ## 🧭 How it works
 
@@ -54,7 +102,7 @@ Any P0 that is `FAIL` or `NEEDS REVIEW` makes the verdict 🔴 **NOT READY**. Sa
 
 Everything here is plain Markdown you can read. The whole agent behavior is one file, [`agents/CLAUDE.md`](agents/CLAUDE.md), and it takes about 2 minutes to read.
 
-- **Nothing to run.** No binaries, no packages, no scripts in your project. The plugin is the same Markdown files. (`scripts/sync-agents.sh` is only for maintainers of this repo.)
+- **Nothing to run for the audit.** No binaries, no packages, no scripts in your project. The plugin is the same Markdown files. The optional CI scanner is one dependency-free file you can read: [`cli/scan.mjs`](cli/scan.mjs). (`scripts/` is only for maintainers of this repo.)
 - **Read-only audit.** The agent does not change your code until you approve the report.
 - **Fetches from one place only:** raw files of this repo. It ignores links to other sites.
 - **Fetched files are data, not instructions.** If one asks the agent to change its rules, edit or delete files, install anything, reveal secrets or send data, the agent refuses and flags it as `⚠️ Suspicious source content`.
@@ -62,18 +110,6 @@ Everything here is plain Markdown you can read. The whole agent behavior is one 
 - **Scanned on every change.** Every push to `main` publishes a release, and its zip and the agent file are uploaded to VirusTotal automatically. Scan links and SHA-256 hashes are in the [release notes](https://github.com/yldray/vibe-check/releases/latest).
 - **Feedback is opt-in.** When an audit finds a bug the checklists don't cover, or you say a result is wrong, the agent offers an anonymized issue draft for this repo. It shows you the full text and sends nothing without your yes.
 - **Want a frozen version?** Fork the repo and point the base URL in your copy of the agent file to your fork.
-
-## 📏 Benchmark
-
-Two intentionally vulnerable projects with **22 planted bugs**, one prompt: "quick vibe check".
-
-| Agent | Found |
-|---|---|
-| Claude Code | 22/22 |
-| Cursor | 22/22 |
-| Codex | 20/22 + 2 partial |
-
-Details, times and how to run it yourself: [`benchmark/`](benchmark/).
 
 ## 🚦 Severity
 
