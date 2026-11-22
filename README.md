@@ -7,7 +7,7 @@
 Pre-launch test cases, chronic bugs and store-release rules for vibe coders.
 React · Angular · Vue · .NET · Java · Node · Python · Supabase · Firebase · Android · iOS · Expo · Flutter
 
-![License](https://img.shields.io/badge/license-MIT-green) ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen) ![Tested with](https://img.shields.io/badge/tested%20with-Claude%20Code%20%7C%20Cursor%20%7C%20Codex-purple) [![VirusTotal](https://img.shields.io/badge/VirusTotal-scanned%20every%20release-394EFF)](https://github.com/yldray/vibe-check/releases/latest)
+![License](https://img.shields.io/badge/license-MIT-green) ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen) ![Tested with](https://img.shields.io/badge/tested%20with-Claude%20Code%20%7C%20Cursor%20%7C%20Codex-purple) [![VirusTotal](https://img.shields.io/badge/VirusTotal-scanned%20every%20release-394EFF)](https://github.com/yldray/vibe-check/releases/latest) [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-vibe--check%20scan-2ea44f?logo=github)](https://github.com/marketplace/actions/vibe-check-scan)
 
 <img src="assets/sample-report.png" alt="Sample vibe check report: four P0 checks, three FAIL, verdict NOT READY" width="720">
 
@@ -60,7 +60,7 @@ Details, times and how to run it yourself: [`benchmark/`](benchmark/).
 
 ## 🤖 Run it in CI
 
-The checks a pattern can decide (secrets, `.env` in git, keys shipped to the client, open CORS, GitHub Actions injection) also run without an LLM, so they can block a merge:
+The checks a pattern can decide (secrets, `.env` in git, keys shipped to the client, open CORS, GitHub Actions injection) also run without an LLM, so they can block a merge. The action is on the [GitHub Marketplace](https://github.com/marketplace/actions/vibe-check-scan):
 
 ```yaml
 # .github/workflows/vibe-check.yml
